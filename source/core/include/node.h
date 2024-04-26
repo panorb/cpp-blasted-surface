@@ -1,7 +1,7 @@
 #pragma once
 #include <string>
 
-namespace core {
+namespace blast {
 	class Node {
 		size_t index;
 		std::string label;
@@ -13,4 +13,6 @@ namespace core {
 		const std::string& getLabel() const { return label; }
 		const size_t getIndex() const { return index; }
 	};
+
+	typedef std::shared_ptr<Node> NodeP;
 };
