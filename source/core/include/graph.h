@@ -16,5 +16,6 @@ namespace blast {
 		void addUndirectedEdge(size_t a, size_t b, int weight);
 		int getEdgeWeight(size_t from, size_t to);
 		bool existsEdge(size_t from, size_t to);
+		int getNodeCount() { return nodes.size(); }
 	};
 };

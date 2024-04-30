@@ -38,12 +38,22 @@ TEST_CASE("Create and check for weighted undirected edge", "[graph]") {
 	REQUIRE(graph.getEdgeWeight(nodeB->getIndex(), nodeA->getIndex()) == 10);
 }
 
-TEST_CASE("Create graph with 100 unconnected nodes", "[graph]") {
+TEST_CASE("Create graph with 100 connected nodes", "[graph]") {
 	blast::Graph graph;
+	graph.addNode(std::make_shared<blast::Node>("Node 0"));
 
-	for (int i = 0; i < 100; i++) {
+	for (int i = 1; i < 100; i++) {
 		std::string label = "Node ";
-		label += i;
+		label += std::to_string(i);
 		blast::NodeP node = std::make_shared<blast::Node>(label);
+		graph.addNode(node);
+		graph.addUndirectedEdge(i - 1, i, 1);
 	}
+
+	REQUIRE(graph.getNode(99)->getLabel() == "Node 99");
+	REQUIRE(graph.existsEdge(98, 99) == true);
+	REQUIRE(graph.getEdgeWeight(98, 99) == 1);
+	REQUIRE(graph.existsEdge(99, 98) == true);
+	REQUIRE(graph.getEdgeWeight(99, 98) == 1);
+	REQUIRE(graph.getNodeCount() == 100);
 }
