@@ -4,6 +4,7 @@
 
 namespace blast {
 	class Node {
+	protected:
 		size_t index;
 		std::string label;
 		

@@ -2,7 +2,9 @@
 
 int main()
 {
-	blast::Visualizer visualizer;
+	blast::GraphP graph = std::make_shared<blast::Graph>();
+	blast::Visualizer visualizer{ graph };
+
 	visualizer.initializeWindow();
 	visualizer.mainLoop();
 	return 0;

@@ -18,4 +18,6 @@ namespace blast {
 		bool existsEdge(size_t from, size_t to);
 		int getNodeCount() { return nodes.size(); }
 	};
+
+	typedef std::shared_ptr<Graph> GraphP;
 };
