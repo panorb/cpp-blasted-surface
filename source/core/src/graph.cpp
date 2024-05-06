@@ -19,6 +19,8 @@ void blast::Graph::addDirectedEdge(size_t from, size_t to, int weight)
 {
 	assert(from < adjList.size());
 	assert(to < adjList.size());
+	assert(from != to);
+	assert(!existsEdge(from, to));
 
 	adjList[from].push_back(std::make_pair(weight, to));
 }

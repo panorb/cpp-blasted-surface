@@ -46,10 +46,29 @@ void blast::Visualizer::update()
 		VisualNodeP node = std::make_shared<VisualNode>("Node " + std::to_string(graph->getNodeCount()), mousePosition, color);
 		graph->addNode(node);
 	}
+
+
+	if (IsKeyPressed(KEY_E)) {
+		// Add edge
+		if (graph->getNodeCount() >= 2) {
+			int node1 = GetRandomValue(0, graph->getNodeCount() - 1);
+			int node2 = GetRandomValue(0, graph->getNodeCount() - 1);
+
+			graph->addDirectedEdge(node1, node2, 1);
+		}
+	}
 }
 
 void blast::Visualizer::render()
 {
+	for (int i = 0; i < graph->getNodeCount(); i++) {
+		for (int j = 0; j < graph->getNodeCount(); j++) {
+			if (graph->existsEdge(i, j)) {
+				DrawLineV(getNode(i)->renderPosition, getNode(j)->renderPosition, BLACK);
+			}
+		}
+	}
+
 	for (int i = 0; i < graph->getNodeCount(); i++) {
 		VisualNodeP node = getNode(i);
 		// node->renderPosition = { 100.f + i * 100.f, 100.f };
