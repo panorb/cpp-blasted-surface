@@ -1,5 +1,4 @@
 #include "graph.h"
-#include <cassert>
 
 void blast::Graph::addNode(NodeP node)
 {
@@ -10,17 +9,16 @@ void blast::Graph::addNode(NodeP node)
 
 blast::NodeP blast::Graph::getNode(size_t index)
 {
-	assert(index < nodes.size());
+	if (index >= nodes.size()) return nullptr;
 
 	return nodes[index];
 }
 
 void blast::Graph::addDirectedEdge(size_t from, size_t to, int weight)
 {
-	assert(from < adjList.size());
-	assert(to < adjList.size());
-	assert(from != to);
-	assert(!existsEdge(from, to));
+	if (from == to || from >= adjList.size() || to >= adjList.size() || existsEdge(from, to)) {
+		return;
+	}
 
 	adjList[from].push_back(std::make_pair(weight, to));
 }
@@ -33,8 +31,7 @@ void blast::Graph::addUndirectedEdge(size_t a, size_t b, int weight)
 
 int blast::Graph::getEdgeWeight(size_t from, size_t to)
 {
-	assert(from < nodes.size());
-	assert(to < nodes.size());
+	if (from >= nodes.size() || to >= nodes.size()) return 0;
 
 	auto neighbors = adjList[from];
 
