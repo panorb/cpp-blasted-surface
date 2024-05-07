@@ -6,7 +6,7 @@ void blast::VisualNode::draw()
 	for (int i = 0; i < Visualizer::EDGE_THICKNESS; i++) {
 		DrawCircleLinesV(renderPosition, Visualizer::NODE_RADIUS - i, renderColor);
 	}
-	
+
 	// RLAPI void DrawTextEx(Font font, const char *text, Vector2 position, float fontSize, float spacing, Color tint);
 	DrawCircleV(renderPosition, Visualizer::NODE_RADIUS - Visualizer::EDGE_THICKNESS, WHITE);
 	DrawTextEx(GetFontDefault(), label.c_str(), { renderPosition.x - (Visualizer::NODE_RADIUS / 2) - 7, renderPosition.y - 4 }, 14, 1, BLACK);
@@ -51,6 +51,8 @@ void blast::Visualizer::update()
 void blast::Visualizer::render()
 {
 	DrawText(activeState->name().c_str(), 10, 10, 20, BLACK);
+
+	activeState->draw(*this);
 
 	for (int i = 0; i < graph->getNodeCount(); i++) {
 		for (int j = 0; j < graph->getNodeCount(); j++) {
@@ -100,5 +102,12 @@ void blast::AddEdgeState::update(Visualizer& visualizer)
 				firstIndex = highestIndex;
 			}
 		}
+	}
+}
+
+void blast::AddEdgeState::draw(Visualizer& visualizer) {
+	if (firstIndex >= 0) {
+		Vector2 startPosition = visualizer.getNode(firstIndex)->renderPosition;
+		DrawLineV(startPosition, GetMousePosition(), RED);
 	}
 }

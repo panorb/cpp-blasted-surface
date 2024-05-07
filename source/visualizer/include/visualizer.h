@@ -21,22 +21,24 @@ namespace blast {
 
 	class VisualizerState {
 	public:
+		virtual std::string name() = 0;
 		virtual ~VisualizerState() {};
 		virtual void update(Visualizer& visualizer) {}
-		virtual std::string name() = 0;
+		virtual void draw(Visualizer& visualizer) {};
 	};
 
 	class AddNodeState : public VisualizerState {
 	public:
-		void update(Visualizer& visualizer) override;
 		std::string name() override { return "Add Node"; };
+		void update(Visualizer& visualizer) override;
 	};
 
 	class AddEdgeState : public VisualizerState {
 		int firstIndex = -1;
 	public:
-		void update(Visualizer& visualizer) override;
 		std::string name() override { return "Add Edge"; };
+		void update(Visualizer& visualizer) override;
+		void draw(Visualizer& visualizer) override;
 	};
 
 	class Visualizer {
