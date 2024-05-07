@@ -15,8 +15,6 @@ namespace blast {
 		void draw();
 	};
 
-	typedef std::shared_ptr<VisualNode> VisualNodeP;
-
 	class Visualizer;
 
 	class VisualizerState {
@@ -64,6 +62,6 @@ namespace blast {
 		void update();
 		void render();
 		int getClickedNodeIndex(Vector2 clickedPos);
-		inline VisualNodeP getNode(int index);
+		inline std::shared_ptr<VisualNode> getNode(int index);
 	};
-};
+}; // namespace blast

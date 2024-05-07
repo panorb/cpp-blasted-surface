@@ -5,7 +5,7 @@ TEST_CASE("Graphs can be created and manipulated", "[graph]") {
 	blast::Graph graph;
 
 	SECTION("Adding nodes to a graph") {
-		blast::NodeP node = std::make_shared<blast::Node>("Test");
+		std::shared_ptr<blast::Node> node = std::make_shared<blast::Node>("Test");
 		graph.addNode(node);
 		REQUIRE(graph.getNode(0)->getLabel() == "Test");
 
@@ -26,8 +26,8 @@ TEST_CASE("Graphs can be created and manipulated", "[graph]") {
 	}
 	
 	SECTION("Adding two nodes to a graph") {
-		blast::NodeP nodeA = std::make_shared<blast::Node>("A");
-		blast::NodeP nodeB = std::make_shared<blast::Node>("B");
+		std::shared_ptr<blast::Node> nodeA = std::make_shared<blast::Node>("A");
+		std::shared_ptr<blast::Node> nodeB = std::make_shared<blast::Node>("B");
 		graph.addNode(nodeA);
 		graph.addNode(nodeB);
 
@@ -54,7 +54,7 @@ TEST_CASE("Graphs can be created and manipulated", "[graph]") {
 		for (int i = 1; i < 100; i++) {
 			std::string label = "Node ";
 			label += std::to_string(i);
-			blast::NodeP node = std::make_shared<blast::Node>(label);
+			std::shared_ptr<blast::Node> node = std::make_shared<blast::Node>(label);
 			graph.addNode(node);
 			graph.addUndirectedEdge(i - 1, i, 1);
 		}

@@ -1,13 +1,13 @@
 #include "graph.h"
 
-void blast::Graph::addNode(NodeP node)
+void blast::Graph::addNode(std::shared_ptr<blast::Node> node)
 {
 	nodes.push_back(node);
 	nodes.back()->index = nodes.size() - 1;
 	adjList.push_back(std::vector<std::pair<int, size_t>>());
 }
 
-blast::NodeP blast::Graph::getNode(size_t index)
+std::shared_ptr<blast::Node> blast::Graph::getNode(size_t index)
 {
 	if (index >= nodes.size()) return nullptr;
 

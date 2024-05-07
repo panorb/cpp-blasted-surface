@@ -2,7 +2,7 @@
 
 int main()
 {
-	blast::GraphP graph = std::make_shared<blast::Graph>();
+	std::shared_ptr<blast::Graph> graph = std::make_shared<blast::Graph>();
 	blast::Visualizer visualizer{ graph };
 
 	visualizer.initializeWindow();

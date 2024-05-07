@@ -16,5 +16,4 @@ namespace blast {
 		const size_t getIndex() const { return index; }
 	};
 
-	typedef std::shared_ptr<Node> NodeP;
-};
+}; // namespace blast

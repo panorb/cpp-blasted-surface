@@ -6,7 +6,7 @@ void blast::VisualNode::draw()
 	DrawTextEx(GetFontDefault(), label.c_str(), { renderPosition.x - (Visualizer::NODE_RADIUS / 2) - 7, renderPosition.y - Visualizer::NODE_RADIUS - 14 }, 14, 1, BLACK);
 }
 
-inline blast::VisualNodeP blast::Visualizer::getNode(int index)
+inline std::shared_ptr<blast::VisualNode> blast::Visualizer::getNode(int index)
 {
 	return static_pointer_cast<VisualNode>(graph->getNode(index));
 }
@@ -57,7 +57,7 @@ void blast::Visualizer::render()
 	}
 
 	for (int i = 0; i < graph->getNodeCount(); i++) {
-		VisualNodeP node = getNode(i);
+		std::shared_ptr<VisualNode> node = getNode(i);
 		node->renderColor = DEFAULT_NODE_COLOR;
 		node->draw();
 	}
@@ -82,7 +82,7 @@ void blast::AddNodeState::update(Visualizer& visualizer)
 		Vector2 mousePosition = GetMousePosition();
 		Color color{};
 
-		VisualNodeP node = std::make_shared<VisualNode>("Node " + std::to_string(visualizer.graph->getNodeCount()), mousePosition, color);
+		std::shared_ptr<VisualNode> node = std::make_shared<VisualNode>("Node " + std::to_string(visualizer.graph->getNodeCount()), mousePosition, color);
 		visualizer.graph->addNode(node);
 	}
 }

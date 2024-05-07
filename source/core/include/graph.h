@@ -5,13 +5,13 @@
 
 namespace blast {
 	class Graph {
-		std::vector<NodeP> nodes;
+		std::vector<std::shared_ptr<Node>> nodes;
 		// List of adjacency rows with pairs of weight and index of neighbor node
 		std::vector<std::vector<std::pair<int, size_t>>> adjList;
 
 	public:
-		void addNode(NodeP node);
-		NodeP getNode(size_t index);
+		void addNode(std::shared_ptr<Node> node);
+		std::shared_ptr<Node> getNode(size_t index);
 		void addDirectedEdge(size_t from, size_t to, int weight);
 		void addUndirectedEdge(size_t a, size_t b, int weight);
 		void removeDirectedEdge(size_t from, size_t to);
@@ -21,5 +21,4 @@ namespace blast {
 		int getNodeCount() { return nodes.size(); }
 	};
 
-	typedef std::shared_ptr<Graph> GraphP;
-};
+}; // namespace blast
