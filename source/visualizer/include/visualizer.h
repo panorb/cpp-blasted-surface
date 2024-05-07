@@ -21,8 +21,10 @@ namespace blast {
 	public:
 		virtual std::string name() = 0;
 		virtual ~VisualizerState() {};
-		virtual void update(Visualizer& visualizer) {}
+		virtual void enter(Visualizer& visualizer) {};
+		virtual void update(Visualizer& visualizer) {};
 		virtual void draw(Visualizer& visualizer) {};
+		virtual void exit(Visualizer& visualizer) {};
 	};
 
 	class AddNodeState : public VisualizerState {
@@ -43,6 +45,7 @@ namespace blast {
 		int heldIndex = -1;
 	public:
 		std::string name() override { return "Move Node"; };
+		void exit(Visualizer& visualizer) override;
 		void update(Visualizer& visualizer) override;
 	};
 
@@ -57,6 +60,7 @@ namespace blast {
 
 		Visualizer(std::shared_ptr<blast::Graph> graph) : graph(graph) {};
 		std::shared_ptr<blast::Graph> graph;
+		void changeState(std::unique_ptr<VisualizerState> state);
 		void initializeWindow();
 		void mainLoop();
 		void update();

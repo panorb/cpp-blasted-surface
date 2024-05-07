@@ -12,6 +12,13 @@ inline std::shared_ptr<blast::VisualNode> blast::Visualizer::getNode(int index)
 }
 
 
+void blast::Visualizer::changeState(std::unique_ptr<VisualizerState> state)
+{
+	activeState->exit(*this);
+	activeState = std::move(state);
+	activeState->enter(*this);
+}
+
 void blast::Visualizer::initializeWindow()
 {
 	InitWindow(1280, 720, "Blast!");
@@ -33,13 +40,13 @@ void blast::Visualizer::mainLoop()
 void blast::Visualizer::update()
 {
 	if (IsKeyPressed(KEY_E)) {
-		activeState = std::make_unique<AddEdgeState>();
+		changeState(std::make_unique<AddEdgeState>());
 	}
 	else if (IsKeyPressed(KEY_N)) {
-		activeState = std::make_unique<AddNodeState>();
+		changeState(std::make_unique<AddNodeState>());
 	}
 	else if (IsKeyPressed(KEY_M)) {
-		activeState = std::make_unique<MoveState>();
+		changeState(std::make_unique<MoveState>());
 	}
 
 	activeState->update(*this);
@@ -121,12 +128,18 @@ void blast::AddEdgeState::draw(Visualizer& visualizer) {
 	}
 }
 
+void blast::MoveState::exit(Visualizer& visualizer)
+{
+	SetMouseCursor(MOUSE_CURSOR_DEFAULT);
+}
+
 void blast::MoveState::update(Visualizer& visualizer)
 {
 	Vector2 mousePosition = GetMousePosition();
+	int hoveredIndex = visualizer.getClickedNodeIndex(mousePosition);
 
 	if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
-		heldIndex = visualizer.getClickedNodeIndex(mousePosition);;
+		heldIndex = hoveredIndex;
 	}
 	else if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) {
 		heldIndex = -1;
@@ -135,5 +148,12 @@ void blast::MoveState::update(Visualizer& visualizer)
 	if (heldIndex >= 0) {
 		DrawCircleV(mousePosition, Visualizer::NODE_RADIUS + 8, RED);
 		visualizer.getNode(heldIndex)->renderPosition = mousePosition;
+	}
+	
+	if (hoveredIndex >= 0) {
+		SetMouseCursor(MOUSE_CURSOR_RESIZE_ALL);
+	}
+	else {
+		SetMouseCursor(MOUSE_CURSOR_DEFAULT);
 	}
 }
