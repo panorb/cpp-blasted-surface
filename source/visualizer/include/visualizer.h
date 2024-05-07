@@ -40,7 +40,7 @@ namespace blast {
 	};
 
 	class MoveState : public VisualizerState {
-		int index = -1;
+		int heldIndex = -1;
 	public:
 		std::string name() override { return "Move Node"; };
 		void update(Visualizer& visualizer) override;

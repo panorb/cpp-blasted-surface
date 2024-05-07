@@ -38,6 +38,9 @@ void blast::Visualizer::update()
 	else if (IsKeyPressed(KEY_N)) {
 		activeState = std::make_unique<AddNodeState>();
 	}
+	else if (IsKeyPressed(KEY_M)) {
+		activeState = std::make_unique<MoveState>();
+	}
 
 	activeState->update(*this);
 }
@@ -120,11 +123,17 @@ void blast::AddEdgeState::draw(Visualizer& visualizer) {
 
 void blast::MoveState::update(Visualizer& visualizer)
 {
-	if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
-		if (index < 0) {
-			Vector2 mousePosition = GetMousePosition();
-			index = visualizer.getClickedNodeIndex(mousePosition);
-		}
+	Vector2 mousePosition = GetMousePosition();
 
+	if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+		heldIndex = visualizer.getClickedNodeIndex(mousePosition);;
+	}
+	else if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) {
+		heldIndex = -1;
+	}
+
+	if (heldIndex >= 0) {
+		DrawCircleV(mousePosition, Visualizer::NODE_RADIUS + 8, RED);
+		visualizer.getNode(heldIndex)->renderPosition = mousePosition;
 	}
 }
