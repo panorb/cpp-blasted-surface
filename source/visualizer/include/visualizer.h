@@ -41,13 +41,21 @@ namespace blast {
 		void draw(Visualizer& visualizer) override;
 	};
 
+	class MoveState : public VisualizerState {
+		int index = -1;
+	public:
+		std::string name() override { return "Move Node"; };
+		void update(Visualizer& visualizer) override;
+	};
+
 	class Visualizer {
 		std::unique_ptr<VisualizerState> activeState = std::make_unique<AddNodeState>();
 
 		friend class VisualNode;
 	public:
-		static const int NODE_RADIUS = 32;
+		static const int NODE_RADIUS = 12;
 		static const int EDGE_THICKNESS = 3;
+		static constexpr Color DEFAULT_NODE_COLOR = BLACK;
 
 		Visualizer(std::shared_ptr<blast::Graph> graph) : graph(graph) {};
 		std::shared_ptr<blast::Graph> graph;
@@ -55,6 +63,7 @@ namespace blast {
 		void mainLoop();
 		void update();
 		void render();
+		int getClickedNodeIndex(Vector2 clickedPos);
 		inline VisualNodeP getNode(int index);
 	};
 };

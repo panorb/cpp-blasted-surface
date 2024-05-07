@@ -14,6 +14,8 @@ namespace blast {
 		NodeP getNode(size_t index);
 		void addDirectedEdge(size_t from, size_t to, int weight);
 		void addUndirectedEdge(size_t a, size_t b, int weight);
+		void removeDirectedEdge(size_t from, size_t to);
+		void removeUndirectedEdge(size_t a, size_t b);
 		int getEdgeWeight(size_t from, size_t to);
 		bool existsEdge(size_t from, size_t to);
 		int getNodeCount() { return nodes.size(); }
