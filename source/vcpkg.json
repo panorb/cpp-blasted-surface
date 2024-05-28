@@ -3,7 +3,9 @@
   "version": "0.0.1",
   "dependencies": [
     "raylib",
-    "catch2"
+    "catch2",
+		"glfw3",
+		"glm"
   ]
 }
 
