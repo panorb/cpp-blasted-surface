@@ -2,6 +2,8 @@
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
+#include <vulkan_ext_functions.h>
+
 #include <glm/glm.hpp>
 
 #include <stdexcept>
@@ -10,6 +12,7 @@
 #include <vector>
 #include <set>
 #include <fstream>
+#include <iostream>
 
 static std::vector<char> readFile(const std::string& filename) {
 	// Open the file in binary mode
@@ -45,8 +48,23 @@ public:
 	* @brief Cleans up the Vulkan renderer
 	*/
 	void cleanup();
+	/**
+	* @brief Program main loop
+	*/
+	void mainLoop();
 private:
+	const int MAX_FRAMES_IN_FLIGHT = 2;
 	GLFWwindow* window;
+
+	const std::vector<const char*> validationLayers = {
+		"VK_LAYER_KHRONOS_validation"
+	};
+
+#ifndef NDEBUG
+	const bool enableValidationLayers = true;
+#else
+	const bool enableValidationLayers = false;
+#endif
 
 	///////////////////////////
 	// HELPERS               //
@@ -86,6 +104,19 @@ private:
 	VkFormat swapChainImageFormat;
 	VkExtent2D swapChainExtent;
 	std::vector<VkImageView> swapChainImageViews;
+	std::vector<VkFramebuffer> swapChainFramebuffers;
+	
+	VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
+	VkRenderPass renderPass = VK_NULL_HANDLE;
+	VkPipeline graphicsPipeline = VK_NULL_HANDLE;
+
+	VkCommandPool commandPool = VK_NULL_HANDLE;
+	std::vector<VkCommandBuffer> commandBuffers;
+
+	std::vector<VkSemaphore> imageAvailableSemaphores;
+	std::vector<VkSemaphore> renderFinishedSemaphores;
+	std::vector<VkFence> inFlightFences;
+	uint32_t currentFrame = 0;
 
 	/**
 	* @brief Initializes the GLFW window
@@ -95,6 +126,19 @@ private:
 	* @brief Initializes the Vulkan API
 	*/
 	void initVulkan();
+	/**
+	* @brief Setting up the debug messenger
+	*/
+	void setupDebugMessenger();
+	/**
+	* @brief Checks if the validation layers are supported
+	* @return true if the validation layers are supported, false otherwise
+	*/
+	bool checkValidationLayerSupport() const;
+	/**
+	* @brief Populates the debug messenger create info
+	*/
+	void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
 	
 	/**
 	* @brief Creates the Vulkan instance
@@ -159,6 +203,45 @@ private:
 	* @brief Creates the image views for the swap chain images
 	*/
 	void createImageViews();
+	/**
+	* @brief Creates the framebuffers
+	*/
+	void createFramebuffers();
 
+	/**
+	* @brief Creates a shader module from the shader code
+	*/
+	VkShaderModule createShaderModule(const std::vector<char>& code) const;
+	/**
+	* @brief Creates the graphics pipeline
+	*/
+	void createGraphicsPipeline();
+	/**
+	* @brief Creates the pipeline layout
+	*/
+	void createRenderPass();
+
+	/**
+	* @brief Creates the command pool
+	*/
+	void createCommandPool();
+	/**
+	* @brief Creates the command buffer
+	*/
+	void createCommandBuffers();
+	/**
+	* @brief Records the command buffer
+	*/
+	void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t frameIndex);
+
+	/**
+	* @brief Creates the semaphores and fences
+	*/
+	void createSyncObjects();
+
+	/**
+	* @brief Draws a frame
+	*/
+	void drawFrame();
 
 };
