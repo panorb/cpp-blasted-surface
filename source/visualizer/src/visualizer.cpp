@@ -52,6 +52,11 @@ void blast::Visualizer::update()
 	activeState->update(*this);
 }
 
+inline Vector2 PerpendicularCounterClockwise(Vector2 vector2)
+{
+	return Vector2{ -vector2.y, -vector2.x };
+}
+
 void blast::Visualizer::render()
 {
 	DrawText(activeState->name().c_str(), 10, 10, 20, BLACK);
@@ -60,8 +65,15 @@ void blast::Visualizer::render()
 
 	for (int i = 0; i < graph->getNodeCount(); i++) {
 		for (int j = 0; j < graph->getNodeCount(); j++) {
-			if (graph->existsEdge(i, j)) {
+			if (i < j && graph->existsEdge(i, j)) {
 				DrawLineEx(getNode(i)->renderPosition, getNode(j)->renderPosition, 3.0, BLACK);
+				Vector2 direction = { getNode(j)->renderPosition.x - getNode(i)->renderPosition.x, getNode(j)->renderPosition.y - getNode(i)->renderPosition.y };
+				direction = Vector2Normalize(direction);
+				Vector2 perpendicular = PerpendicularCounterClockwise(direction);
+				perpendicular = Vector2Normalize(perpendicular);
+				Vector2 middle = { (getNode(i)->renderPosition.x + getNode(j)->renderPosition.x) / 2, (getNode(i)->renderPosition.y + getNode(j)->renderPosition.y) / 2 };
+				Vector2 textPosition = { middle.x + (perpendicular.x * 24.0), middle.y + (perpendicular.y * 12.0) };
+				DrawTextEx(GetFontDefault(), std::to_string(graph->getEdgeWeight(i, j)).c_str(), textPosition, 14, 1, BLACK);
 			}
 		}
 	}
@@ -94,6 +106,14 @@ void blast::AddNodeState::update(Visualizer& visualizer)
 
 		std::shared_ptr<VisualNode> node = std::make_shared<VisualNode>("Node " + std::to_string(visualizer.graph->getNodeCount()), mousePosition, color);
 		visualizer.graph->addNode(node);
+	}
+	else if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) {
+		Vector2 mousePosition = GetMousePosition();
+		int clickedIndex = visualizer.getClickedNodeIndex(mousePosition);
+
+		if (clickedIndex >= 0) {
+			visualizer.graph->removeNode(clickedIndex);
+		}
 	}
 }
 

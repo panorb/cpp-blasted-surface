@@ -7,6 +7,30 @@ void blast::Graph::addNode(std::shared_ptr<blast::Node> node)
 	adjList.push_back(std::vector<std::pair<int, size_t>>());
 }
 
+void blast::Graph::removeNode(size_t index) {
+	if (index >= nodes.size()) return;
+
+	nodes.erase(nodes.begin() + index);
+	adjList.erase(adjList.begin() + index);
+
+	for (auto& neighbors : adjList) {
+		for (auto it = neighbors.begin(); it != neighbors.end(); it++) {
+			if (it->second == index) {
+				neighbors.erase(it);
+				break;
+			}
+		}
+	}
+
+	for (auto& neighbors : adjList) {
+		for (auto& neighbor : neighbors) {
+			if (neighbor.second > index) {
+				neighbor.second--;
+			}
+		}
+	}
+}
+
 std::shared_ptr<blast::Node> blast::Graph::getNode(size_t index)
 {
 	if (index >= nodes.size()) return nullptr;

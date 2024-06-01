@@ -11,6 +11,7 @@ namespace blast {
 
 	public:
 		void addNode(std::shared_ptr<Node> node);
+		void removeNode(size_t index);
 		std::shared_ptr<Node> getNode(size_t index);
 		void addDirectedEdge(size_t from, size_t to, int weight);
 		void addUndirectedEdge(size_t a, size_t b, int weight);
