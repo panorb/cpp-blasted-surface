@@ -1,4 +1,4 @@
-#include "graph.h"
+#include "blast/graph.h"
 
 void blast::Graph::add_node(std::shared_ptr<blast::Node> node)
 {

@@ -1,9 +1,12 @@
-#include "visualizer.h"
+#include <blast/visualizer.h>
 
 void blast::Visual_node::draw()
 {
 	DrawCircleV(render_position, Visualizer::node_radius, render_color);
-	DrawTextEx(GetFontDefault(), label.c_str(), { render_position.x - (Visualizer::node_radius / 2) - 7, render_position.y - Visualizer::node_radius - 14 }, 14, 1, BLACK);
+	DrawTextEx(GetFontDefault(), label.c_str(), {
+		           render_position.x - (Visualizer::node_radius / 2) - 7,
+		           render_position.y - Visualizer::node_radius - 14
+	           }, 14, 1, BLACK);
 }
 
 inline std::shared_ptr<blast::Visual_node> blast::Visualizer::get_node(int index)

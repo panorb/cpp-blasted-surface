@@ -1,8 +1,8 @@
 #pragma once
 #include <raylib.h>
 #include <raymath.h>
-#include <node.h>
-#include <graph.h>
+#include <blast/node.h>
+#include <blast/graph.h>
 
 namespace blast {
 	class Visual_node : public Node {

@@ -1,4 +1,4 @@
-#include <visualizer.h>
+#include <blast/visualizer.h>
 
 int main()
 {

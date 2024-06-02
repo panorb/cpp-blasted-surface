@@ -1,4 +1,4 @@
-add_library(Core include/graph.h include/node.h src/graph.cpp src/node.cpp)
+add_library(Core include/blast/graph.h src/graph.cpp include/blast/node.h src/node.cpp include/blast/point_cloud.h src/point_cloud.cpp)
 target_include_directories(Core PUBLIC include)
 
 add_executable(CoreTest tests/graph.test.cpp)
