@@ -5,11 +5,14 @@
 #include <vulkan_ext_functions.h>
 
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <chrono>
 
 #include <stdexcept>
 #include <optional>
 // Container classes
 #include <vector>
+#include <array>
 #include <set>
 #include <fstream>
 #include <iostream>
@@ -39,6 +42,7 @@ static std::vector<char> readFile(const std::string& filename) {
 class VulkanRenderer {
 public:
 	static VulkanRenderer* GetInstance();
+	bool framebufferResized = false;
 
 	/**
 	* @brief Initializes the Vulkan renderer
@@ -84,6 +88,54 @@ private:
 		std::vector<VkSurfaceFormatKHR> formats;
 		std::vector<VkPresentModeKHR> presentModes;
 	};
+
+	struct Vertex {
+		glm::vec2 pos;
+		glm::vec3 color;
+
+		static VkVertexInputBindingDescription getBindingDescription() {
+			VkVertexInputBindingDescription bindingDescription = {};
+			bindingDescription.binding = 0;
+			bindingDescription.stride = sizeof(Vertex);
+			bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+			return bindingDescription;
+		}
+
+		static std::array<VkVertexInputAttributeDescription, 2> getAttributeDescriptions() {
+			std::array<VkVertexInputAttributeDescription, 2> attributeDescriptions = {};
+
+			// Position
+			attributeDescriptions[0].binding = 0;
+			attributeDescriptions[0].location = 0;
+			attributeDescriptions[0].format = VK_FORMAT_R32G32_SFLOAT;
+			attributeDescriptions[0].offset = offsetof(Vertex, pos);
+
+			// Color
+			attributeDescriptions[1].binding = 0;
+			attributeDescriptions[1].location = 1;
+			attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
+			attributeDescriptions[1].offset = offsetof(Vertex, color);
+
+			return attributeDescriptions;
+		}
+	};
+
+	struct UniformBufferObject
+	{
+		glm::mat4 model;
+		glm::mat4 view;
+		glm::mat4 proj;
+	};
+
+	const std::vector<Vertex> vertices = {
+		{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+		{{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
+		{{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
+		{{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
+		{{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}},
+		{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+	};
 	
 	///////////////////////////
 	// VULKAN HANDLES        //
@@ -105,10 +157,21 @@ private:
 	VkExtent2D swapChainExtent;
 	std::vector<VkImageView> swapChainImageViews;
 	std::vector<VkFramebuffer> swapChainFramebuffers;
+
+	VkDescriptorSetLayout descriptorSetLayout;
+	VkDescriptorPool descriptorPool;
+	std::vector<VkDescriptorSet> descriptorSets;
 	
 	VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
 	VkRenderPass renderPass = VK_NULL_HANDLE;
 	VkPipeline graphicsPipeline = VK_NULL_HANDLE;
+
+	VkBuffer vertexBuffer;
+	VkDeviceMemory vertexBufferMemory;
+
+	std::vector<VkBuffer> uniformBuffers;
+	std::vector<VkDeviceMemory> uniformBuffersMemory;
+	std::vector<void*> uniformBuffersMapped;
 
 	VkCommandPool commandPool = VK_NULL_HANDLE;
 	std::vector<VkCommandBuffer> commandBuffers;
@@ -207,11 +270,31 @@ private:
 	* @brief Creates the framebuffers
 	*/
 	void createFramebuffers();
+	/**
+	* @brief Recreates the swap chain
+	*/
+	void recreateSwapChain();
+	/**
+	* @brief Destroys the swap chain
+	*/
+	void cleanupSwapChain();
 
 	/**
 	* @brief Creates a shader module from the shader code
 	*/
 	VkShaderModule createShaderModule(const std::vector<char>& code) const;
+	/**
+	 * @brief Creates the descriptor set layout
+	 */
+	void createDescriptorSetLayout();
+	/**
+	 * @brief Creates the descriptor pool
+	 */
+	void createDescriptorPool();
+	/**
+	 * @brief Creates the descriptor sets
+	 */
+	void createDescriptorSets();
 	/**
 	* @brief Creates the graphics pipeline
 	*/
@@ -243,5 +326,48 @@ private:
 	* @brief Draws a frame
 	*/
 	void drawFrame();
+
+	/**
+	* @brief Find the memory type with the specified properties
+	* @param typeFilter The memory type filter
+	* @param properties The memory properties
+	*/
+	uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
+
+	/**
+	* @brief Creates a buffer
+	* @param size The size of the buffer
+	* @param usage The usage of the buffer
+	* @param properties The memory properties of the buffer
+	* @param buffer The buffer handle
+	* @param bufferMemory The buffer memory handle
+	*/
+	void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
+
+	/**
+	* @brief Copies the buffer
+	* @param srcBuffer The source buffer
+	* @param dstBuffer The destination buffer
+	* @param size The size of the buffer
+	*/
+	void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
+
+	/**
+	* @brief Creates the vertex buffer
+	*/
+	void createVertexBuffer();
+
+	/**
+	 * @brief Creates the uniform buffers
+	 */
+	void createUniformBuffers();
+
+	/**
+	 * @brief Updates the uniform buffer
+	 * @param currentImage The current image index
+	 */
+	void updateUniformBuffer(uint32_t currentImage);
+
+	
 
 };
