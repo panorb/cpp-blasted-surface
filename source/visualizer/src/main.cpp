@@ -2,10 +2,10 @@
 
 int main()
 {
-	std::shared_ptr<blast::Graph> graph = std::make_shared<blast::Graph>();
+	auto graph = std::make_shared<blast::Graph>();
 	blast::Visualizer visualizer{ graph };
 
-	visualizer.initializeWindow();
-	visualizer.mainLoop();
+	visualizer.initialize_window();
+	visualizer.main_loop();
 	return 0;
 }

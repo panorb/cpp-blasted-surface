@@ -5,44 +5,44 @@
 #include <graph.h>
 
 namespace blast {
-	class VisualNode : public Node {
+	class Visual_node : public Node {
 	public:
-		Vector2 renderPosition{};
-		Color renderColor{};
+		Vector2 render_position{};
+		Color render_color{};
 
-		VisualNode(std::string label) : Node(label) {};
-		VisualNode(std::string label, Vector2 position, Color color) : renderPosition(position), renderColor(color), Node(label) {};
+		Visual_node(std::string label) : Node(label) {};
+		Visual_node(std::string label, Vector2 position, Color color) : render_position(position), render_color(color), Node(label) {};
 		void draw();
 	};
 
 	class Visualizer;
 
-	class VisualizerState {
+	class Visualizer_state {
 	public:
 		virtual std::string name() = 0;
-		virtual ~VisualizerState() {};
+		virtual ~Visualizer_state() {};
 		virtual void enter(Visualizer& visualizer) {};
 		virtual void update(Visualizer& visualizer) {};
 		virtual void draw(Visualizer& visualizer) {};
 		virtual void exit(Visualizer& visualizer) {};
 	};
 
-	class AddNodeState : public VisualizerState {
+	class Add_node_state final : public Visualizer_state {
 	public:
 		std::string name() override { return "Add Node"; };
 		void update(Visualizer& visualizer) override;
 	};
 
-	class AddEdgeState : public VisualizerState {
-		int firstIndex = -1;
+	class Add_edge_state final : public Visualizer_state {
+		int first_index = -1;
 	public:
 		std::string name() override { return "Add Edge"; };
 		void update(Visualizer& visualizer) override;
 		void draw(Visualizer& visualizer) override;
 	};
 
-	class MoveState : public VisualizerState {
-		int heldIndex = -1;
+	class Move_state final : public Visualizer_state {
+		int held_index = -1;
 	public:
 		std::string name() override { return "Move Node"; };
 		void exit(Visualizer& visualizer) override;
@@ -50,22 +50,22 @@ namespace blast {
 	};
 
 	class Visualizer {
-		std::unique_ptr<VisualizerState> activeState = std::make_unique<AddNodeState>();
+		std::unique_ptr<Visualizer_state> active_state = std::make_unique<Add_node_state>();
 
-		friend class VisualNode;
+		friend class Visual_node;
 	public:
-		static const int NODE_RADIUS = 12;
-		static const int EDGE_THICKNESS = 3;
-		static constexpr Color DEFAULT_NODE_COLOR = BLACK;
+		static constexpr int node_radius = 12;
+		static constexpr int edge_thickness = 3;
+		static constexpr auto default_node_color = BLACK;
 
 		Visualizer(std::shared_ptr<blast::Graph> graph) : graph(graph) {};
 		std::shared_ptr<blast::Graph> graph;
-		void changeState(std::unique_ptr<VisualizerState> state);
-		void initializeWindow();
-		void mainLoop();
+		void change_state(std::unique_ptr<Visualizer_state> state);
+		void initialize_window();
+		void main_loop();
 		void update();
 		void render();
-		int getClickedNodeIndex(Vector2 clickedPos);
-		inline std::shared_ptr<VisualNode> getNode(int index);
+		int get_hovered_node_index(Vector2 cursor_pos);
+		inline std::shared_ptr<Visual_node> get_node(int index);
 	};
 }; // namespace blast

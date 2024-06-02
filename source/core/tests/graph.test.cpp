@@ -5,65 +5,65 @@ TEST_CASE("Graphs can be created and manipulated", "[graph]") {
 	blast::Graph graph;
 
 	SECTION("Adding nodes to a graph") {
-		std::shared_ptr<blast::Node> node = std::make_shared<blast::Node>("Test");
-		graph.addNode(node);
-		REQUIRE(graph.getNode(0)->getLabel() == "Test");
+		auto node = std::make_shared<blast::Node>("Test");
+		graph.add_node(node);
+		REQUIRE(graph.get_node(0)->get_label() == "Test");
 
 		SECTION("Creating edge between the same node does not work") {
-			graph.addDirectedEdge(node->getIndex(), node->getIndex(), 1);
-			REQUIRE(graph.existsEdge(node->getIndex(), node->getIndex()) == false);
+			graph.add_directed_edge(node->get_index(), node->get_index(), 1);
+			REQUIRE(graph.exists_edge(node->get_index(), node->get_index()) == false);
 		}
 
 		SECTION("Creating edge between non-existant node and existant node does not work") {
-			graph.addDirectedEdge(node->getIndex(), 1, 1);
-			REQUIRE(graph.existsEdge(node->getIndex(), 1) == false);
+			graph.add_directed_edge(node->get_index(), 1, 1);
+			REQUIRE(graph.exists_edge(node->get_index(), 1) == false);
 		}
 
 		SECTION("Creating edge between two non-existant nodes does not work") {
-			graph.addDirectedEdge(1, 2, 1);
-			REQUIRE(graph.existsEdge(1, 2) == false);
+			graph.add_directed_edge(1, 2, 1);
+			REQUIRE(graph.exists_edge(1, 2) == false);
 		}
 	}
 	
 	SECTION("Adding two nodes to a graph") {
-		std::shared_ptr<blast::Node> nodeA = std::make_shared<blast::Node>("A");
-		std::shared_ptr<blast::Node> nodeB = std::make_shared<blast::Node>("B");
-		graph.addNode(nodeA);
-		graph.addNode(nodeB);
+		auto node_a = std::make_shared<blast::Node>("A");
+		auto node_b = std::make_shared<blast::Node>("B");
+		graph.add_node(node_a);
+		graph.add_node(node_b);
 
 		SECTION("Creating weighted directed edge") {
-			graph.addDirectedEdge(nodeA->getIndex(), nodeB->getIndex(), 10);
+			graph.add_directed_edge(node_a->get_index(), node_b->get_index(), 10);
 
-			REQUIRE(graph.existsEdge(nodeA->getIndex(), nodeB->getIndex()) == true);
-			REQUIRE(graph.getEdgeWeight(nodeA->getIndex(), nodeB->getIndex()) == 10);
+			REQUIRE(graph.exists_edge(node_a->get_index(), node_b->get_index()) == true);
+			REQUIRE(graph.get_edge_weight(node_a->get_index(), node_b->get_index()) == 10);
 		}
 
 		SECTION("Creating weighted undirected edge") {
-			graph.addUndirectedEdge(nodeA->getIndex(), nodeB->getIndex(), 10);
+			graph.add_undirected_edge(node_a->get_index(), node_b->get_index(), 10);
 
-			REQUIRE(graph.existsEdge(nodeA->getIndex(), nodeB->getIndex()) == true);
-			REQUIRE(graph.getEdgeWeight(nodeA->getIndex(), nodeB->getIndex()) == 10);
-			REQUIRE(graph.existsEdge(nodeB->getIndex(), nodeA->getIndex()) == true);
-			REQUIRE(graph.getEdgeWeight(nodeB->getIndex(), nodeA->getIndex()) == 10);
+			REQUIRE(graph.exists_edge(node_a->get_index(), node_b->get_index()) == true);
+			REQUIRE(graph.get_edge_weight(node_a->get_index(), node_b->get_index()) == 10);
+			REQUIRE(graph.exists_edge(node_b->get_index(), node_a->get_index()) == true);
+			REQUIRE(graph.get_edge_weight(node_b->get_index(), node_a->get_index()) == 10);
 		}
 	}
 
 	SECTION("Creating graph with 100 connected nodes") {
-		graph.addNode(std::make_shared<blast::Node>("Node 0"));
+		graph.add_node(std::make_shared<blast::Node>("Node 0"));
 
 		for (int i = 1; i < 100; i++) {
 			std::string label = "Node ";
 			label += std::to_string(i);
-			std::shared_ptr<blast::Node> node = std::make_shared<blast::Node>(label);
-			graph.addNode(node);
-			graph.addUndirectedEdge(i - 1, i, 1);
+			auto node = std::make_shared<blast::Node>(label);
+			graph.add_node(node);
+			graph.add_undirected_edge(i - 1, i, 1);
 		}
 
-		REQUIRE(graph.getNode(99)->getLabel() == "Node 99");
-		REQUIRE(graph.existsEdge(98, 99) == true);
-		REQUIRE(graph.getEdgeWeight(98, 99) == 1);
-		REQUIRE(graph.existsEdge(99, 98) == true);
-		REQUIRE(graph.getEdgeWeight(99, 98) == 1);
-		REQUIRE(graph.getNodeCount() == 100);
+		REQUIRE(graph.get_node(99)->get_label() == "Node 99");
+		REQUIRE(graph.exists_edge(98, 99) == true);
+		REQUIRE(graph.get_edge_weight(98, 99) == 1);
+		REQUIRE(graph.exists_edge(99, 98) == true);
+		REQUIRE(graph.get_edge_weight(99, 98) == 1);
+		REQUIRE(graph.get_node_count() == 100);
 	}
 }

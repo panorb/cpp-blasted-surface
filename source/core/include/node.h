@@ -12,8 +12,8 @@ namespace blast {
 	public:
 		Node() = default;
 		Node(std::string label) : index(SIZE_MAX), label(label) {}
-		const std::string& getLabel() const { return label; }
-		const size_t getIndex() const { return index; }
+		const std::string& get_label() const;
+		size_t get_index() const;
 	};
 
 }; // namespace blast

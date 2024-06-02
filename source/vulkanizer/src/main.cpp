@@ -1,9 +1,9 @@
 #include <vulkan_renderer.h>
 
 int main() {
-	VulkanRenderer* renderer = VulkanRenderer::GetInstance();
+	Vulkan_renderer* renderer = Vulkan_renderer::get_instance();
 	renderer->init();
-	renderer->mainLoop();
+	renderer->main_loop();
 	renderer->cleanup();
 
 	return 0;
