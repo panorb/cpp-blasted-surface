@@ -3,6 +3,7 @@
 
 TEST_CASE("Graphs can be created and manipulated", "[graph]") {
 	blast::Graph graph;
+	REQUIRE(graph.get_node_count() == 0);
 
 	SECTION("Adding nodes to a graph") {
 		auto node = std::make_shared<blast::Node>("Test");
