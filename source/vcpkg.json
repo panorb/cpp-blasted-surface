@@ -5,7 +5,8 @@
     "raylib",
     "catch2",
 		"glfw3",
-		"glm"
+		"glm",
+		"pcl"
   ]
 }
 
