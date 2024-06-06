@@ -1,14 +1,20 @@
 #include <fstream>
 #include <blast/point_cloud.h>
 
+#include <pcl/io/pcd_io.h>
+#include <pcl/io/ply_io.h>
+
+
 std::vector<glm::vec3> blast::Point_cloud::get_points() const
 {
 	return points;
 }
 
-std::unique_ptr<blast::Point_cloud> blast::Point_cloud::from_pcl_point_cloud(const pcl::PointCloud<pcl::PointXYZ>& pcl_cloud)
+std::unique_ptr<blast::Point_cloud> from_pcl_point_cloud(const pcl::PointCloud<pcl::PointXYZ>& pcl_cloud)
 {
 	std::vector<glm::vec3> points;
+
+	points.reserve(pcl_cloud.points.size());
 
 	for (const auto pnt : pcl_cloud.points)
 	{
