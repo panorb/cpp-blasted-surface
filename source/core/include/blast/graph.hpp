@@ -2,7 +2,7 @@
 
 #include <vector>
 #include <memory>
-#include "node.h"
+#include "node.hpp"
 
 namespace blast {
 	class Graph {

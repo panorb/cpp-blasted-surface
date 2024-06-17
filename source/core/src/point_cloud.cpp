@@ -1,5 +1,5 @@
 #include <fstream>
-#include <blast/point_cloud.h>
+#include <blast/point_cloud.hpp>
 
 #include <pcl/io/pcd_io.h>
 #include <pcl/io/ply_io.h>

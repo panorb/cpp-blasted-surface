@@ -1,4 +1,4 @@
-#include "blast/node.h"
+#include "blast/node.hpp"
 
 const std::string& blast::Node::get_label() const
 {

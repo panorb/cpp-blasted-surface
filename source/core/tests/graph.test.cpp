@@ -1,4 +1,4 @@
-#include <blast/graph.h>
+#include <blast/graph.hpp>
 #include <catch.hpp>
 
 TEST_CASE("Graphs can be created and manipulated", "[graph]") {

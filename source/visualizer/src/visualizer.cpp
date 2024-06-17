@@ -1,4 +1,4 @@
-#include <blast/visualizer.h>
+#include <blast/visualizer.hpp>
 
 void blast::Visual_node::draw()
 {

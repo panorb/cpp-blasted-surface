@@ -1,4 +1,4 @@
-#include <blast/point_cloud.h>
+#include <blast/point_cloud.hpp>
 #include <catch.hpp>
 
 TEST_CASE("Point clouds can be created from point list", "[point_cloud]") {
