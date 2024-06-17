@@ -1,13 +1,19 @@
 #include "blast/graph.hpp"
 
-void blast::Graph::add_node(std::shared_ptr<blast::Node> node)
+blast::Graph::Graph(const Graph& original)
+{
+	nodes = original.nodes;
+	adj_list = original.adj_list;
+}
+
+void blast::Graph::add_node(const std::shared_ptr<blast::Node>& node)
 {
 	nodes.push_back(node);
 	nodes.back()->index = nodes.size() - 1;
 	adj_list.push_back(std::vector<std::pair<int, size_t>>());
 }
 
-void blast::Graph::remove_node(size_t index) {
+void blast::Graph::remove_node(const size_t index) {
 	if (index >= nodes.size()) return;
 
 	nodes.erase(nodes.begin() + index);
@@ -93,6 +99,19 @@ bool blast::Graph::exists_edge(const size_t from, const size_t to) const
 size_t blast::Graph::get_node_count() const
 {
 	return nodes.size();
+}
+
+void blast::Graph::clear()
+{
+	nodes.clear();
+	clear_edges();
+}
+
+void blast::Graph::clear_edges()
+{
+	
+	adj_list.clear();
+	adj_list.resize(nodes.size());
 }
 
 int blast::get_length_of_path(const Graph& graph, const std::vector<size_t>& path, const bool loop)

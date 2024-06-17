@@ -66,5 +66,35 @@ TEST_CASE("Graphs can be created and manipulated", "[graph]") {
 		REQUIRE(graph.exists_edge(99, 98) == true);
 		REQUIRE(graph.get_edge_weight(99, 98) == 1);
 		REQUIRE(graph.get_node_count() == 100);
+
+		SECTION("Edges can be cleared") {
+			graph.clear_edges();
+			REQUIRE(graph.exists_edge(0, 1) == false);
+			REQUIRE(graph.exists_edge(99, 98) == false);
+		}
+
+		SECTION("Graph can be cleared completely")
+		{
+			graph.clear();
+			REQUIRE(graph.get_node_count() == 0);
+			REQUIRE(graph.exists_edge(0, 1) == false);
+		}
+
+		SECTION("Graph can be copied and edges can be edited independently")
+		{
+			blast::Graph copy(graph);
+
+			REQUIRE(copy.get_node(99)->get_label() == "Node 99");
+			REQUIRE(copy.exists_edge(98, 99) == true);
+			REQUIRE(copy.get_edge_weight(98, 99) == 1);
+
+			copy.remove_undirected_edge(98, 99);
+			REQUIRE(copy.exists_edge(98, 99) == false);
+			REQUIRE(graph.exists_edge(98, 99) == true);
+
+			copy.add_node(std::make_shared<blast::Node>("Node 100"));
+			REQUIRE(copy.get_node_count() == 101);
+			REQUIRE(graph.get_node_count() == 100);
+		}
 	}
 }
