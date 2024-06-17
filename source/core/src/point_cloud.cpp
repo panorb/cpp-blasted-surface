@@ -5,7 +5,7 @@
 #include <pcl/io/ply_io.h>
 
 
-std::vector<glm::vec3> blast::Point_cloud::get_points() const
+const std::vector<glm::vec3>& blast::Point_cloud::get_points() const
 {
 	return points;
 }

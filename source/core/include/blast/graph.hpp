@@ -18,9 +18,11 @@ namespace blast {
 		void add_undirected_edge(size_t a, size_t b, int weight);
 		void remove_directed_edge(size_t from, size_t to);
 		void remove_undirected_edge(size_t a, size_t b);
-		int get_edge_weight(size_t from, size_t to);
-		bool exists_edge(size_t from, size_t to);
-		int get_node_count() const;
+		[[nodiscard]] int get_edge_weight(size_t from, size_t to) const;
+		[[nodiscard]] bool exists_edge(size_t from, size_t to) const;
+		[[nodiscard]] size_t get_node_count() const;
 	};
+
+	int get_length_of_path(const Graph& graph, const std::vector<size_t>& path, bool loop);
 
 }; // namespace blast

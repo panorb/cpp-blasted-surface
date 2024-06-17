@@ -37,7 +37,8 @@ std::shared_ptr<blast::Node> blast::Graph::get_node(size_t index)
 
 	return nodes[index];
 }
-void blast::Graph::add_directed_edge(size_t from, size_t to, int weight)
+
+void blast::Graph::add_directed_edge(const size_t from, const size_t to, const int weight)
 {
 	if (from == to || from >= adj_list.size() || to >= adj_list.size() || exists_edge(from, to)) {
 		return;
@@ -46,7 +47,7 @@ void blast::Graph::add_directed_edge(size_t from, size_t to, int weight)
 	adj_list[from].push_back(std::make_pair(weight, to));
 }
 
-void blast::Graph::add_undirected_edge(size_t a, size_t b, int weight)
+void blast::Graph::add_undirected_edge(const size_t a, const size_t b, const int weight)
 {
 	add_directed_edge(a, b, weight);
 	add_directed_edge(b, a, weight);
@@ -69,7 +70,7 @@ void blast::Graph::remove_undirected_edge(size_t a, size_t b)
 	remove_directed_edge(b, a);
 }
 
-int blast::Graph::get_edge_weight(size_t from, size_t to)
+int blast::Graph::get_edge_weight(const size_t from, const size_t to) const
 {
 	if (from >= nodes.size() || to >= nodes.size()) return 0;
 
@@ -84,12 +85,28 @@ int blast::Graph::get_edge_weight(size_t from, size_t to)
 	return 0;
 }
 
-bool blast::Graph::exists_edge(size_t from, size_t to)
+bool blast::Graph::exists_edge(const size_t from, const size_t to) const
 {
 	return get_edge_weight(from, to) != 0;
 }
 
-int blast::Graph::get_node_count() const
+size_t blast::Graph::get_node_count() const
 {
 	return nodes.size();
+}
+
+int blast::get_length_of_path(const Graph& graph, const std::vector<size_t>& path, const bool loop)
+{
+	int length = 0;
+
+	for (size_t i = 0; i < path.size() - 1; i++) {
+		length += graph.get_edge_weight(path[i], path[i + 1]);
+	}
+
+	if (loop)
+	{
+		length += graph.get_edge_weight(path.back(), path.front());
+	}
+
+	return length;
 }
