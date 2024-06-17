@@ -129,3 +129,17 @@ int blast::get_length_of_path(const Graph& graph, const std::vector<size_t>& pat
 
 	return length;
 }
+
+void blast::add_edges_from_adjacency_matrix(Graph& graph, const std::vector<std::vector<int>>& adj_matrix)
+{
+	for (int i = 0; i < adj_matrix.size(); i++)
+	{
+		for (int j = 0; j < adj_matrix[i].size(); j++)
+		{
+			if (adj_matrix[i][j] != -1)
+			{
+				graph.add_directed_edge(i, j, adj_matrix[i][j]);
+			}
+		}
+	}
+}

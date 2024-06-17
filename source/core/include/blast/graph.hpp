@@ -15,7 +15,7 @@ namespace blast {
 
 		void add_node(const std::shared_ptr<Node>& node);
 		void remove_node(size_t index);
-		std::shared_ptr<Node> get_node(size_t index);
+		std::shared_ptr<Node> get_node(size_t index) const;
 		void add_directed_edge(size_t from, size_t to, int weight);
 		void add_undirected_edge(size_t a, size_t b, int weight);
 		void remove_directed_edge(size_t from, size_t to);
@@ -28,5 +28,5 @@ namespace blast {
 	};
 
 	int get_length_of_path(const Graph& graph, const std::vector<size_t>& path, bool loop);
-
+	void add_edges_from_adjacency_matrix(Graph& graph, const std::vector<std::vector<int>>& adj_matrix);
 }; // namespace blast
