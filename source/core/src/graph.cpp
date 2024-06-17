@@ -37,7 +37,7 @@ void blast::Graph::remove_node(const size_t index) {
 	}
 }
 
-std::shared_ptr<blast::Node> blast::Graph::get_node(size_t index)
+std::shared_ptr<blast::Node> blast::Graph::get_node(size_t index) const
 {
 	if (index >= nodes.size()) return nullptr;
 

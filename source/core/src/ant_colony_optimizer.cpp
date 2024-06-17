@@ -1,22 +1,25 @@
 #include "blast/ant_colony_optimizer.hpp"
 
-std::vector<size_t> AntColonyOptimizer::execute(blast::Graph& node_graph)
+std::vector<size_t> blast::AntColonyOptimizer::execute(blast::Graph& node_graph)
 {
+	blast::Graph pheromone_graph{ node_graph }; // This copy of the graph will store the pheromone values
+	pheromone_graph.clear_edges(); // Clear all edges from the graph
+
 	std::vector<size_t> best_solution;
 
 	for (int i = 0; i < iteration_count; i++)
 	{
 		// Do we have to check if the solution is better than the current best solution?
 		// Or can we just assume that the solution is better?
-		best_solution = construct_solution(node_graph);
-		global_pheromone_update(best_solution);
-		evaporate_pheromone();
+		best_solution = construct_solution(pheromone_graph, node_graph);
+		global_pheromone_update(pheromone_graph, best_solution);
+		evaporate_pheromone(pheromone_graph);
 	}
 
 	return best_solution;
 }
 
-std::vector<size_t> AntColonyOptimizer::construct_solution(blast::Graph& node_graph) const
+std::vector<size_t> blast::AntColonyOptimizer::construct_solution(const blast::Graph& pheromone_graph, const blast::Graph& node_graph) const
 {
 	size_t node_count = node_graph.get_node_count();
 
@@ -48,12 +51,12 @@ std::vector<size_t> AntColonyOptimizer::construct_solution(blast::Graph& node_gr
 	return best_solution;
 }
 
-void AntColonyOptimizer::global_pheromone_update(const std::vector<size_t>& best_solution)
+void blast::AntColonyOptimizer::global_pheromone_update(blast::Graph& pheromone_graph, const std::vector<size_t>& best_solution)
 {
 	// TODO: Implement this
 }
 
-void AntColonyOptimizer::evaporate_pheromone()
+void blast::AntColonyOptimizer::evaporate_pheromone(blast::Graph& pheromone_graph)
 {
 	// TODO: Implement this
 }
