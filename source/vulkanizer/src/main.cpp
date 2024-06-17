@@ -1,4 +1,4 @@
-#include <vulkan_renderer.h>
+#include <vulkan_renderer.hpp>
 
 int main() {
 	Vulkan_renderer* renderer = Vulkan_renderer::get_instance();
