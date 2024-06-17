@@ -17,7 +17,6 @@ add_definitions(${PCL_DEFINITIONS})
 include(add_shaders.cmake)
 
 add_subdirectory(core)
-add_subdirectory(aco)
 add_subdirectory(visualizer)
 add_subdirectory(vulkanizer)
 
