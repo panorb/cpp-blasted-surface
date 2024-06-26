@@ -49,8 +49,8 @@ static void framebuffer_resize_callback(GLFWwindow* window, int width, int heigh
 */
 Vulkan_renderer* Vulkan_renderer::get_instance()
 {
-	static Vulkan_renderer instance;
-	return &instance;
+	static auto instance = std::make_unique<Vulkan_renderer>();
+	return instance.get();
 }
 
 // PUBLIC INTERFACE

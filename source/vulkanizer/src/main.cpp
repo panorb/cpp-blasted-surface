@@ -2,9 +2,10 @@
 
 int main() {
 	Vulkan_renderer* renderer = Vulkan_renderer::get_instance();
-	renderer->init();
+	
+	// renderer->init();
 	renderer->main_loop();
-	renderer->cleanup();
+	// renderer->cleanup();
 
 	return 0;
 }

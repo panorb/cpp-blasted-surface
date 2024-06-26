@@ -18,6 +18,16 @@ public:
 	static Vulkan_renderer* get_instance();
 	bool framebuffer_resized = false;
 
+	Vulkan_renderer()
+	{
+		init();
+	}
+	~Vulkan_renderer()
+	{
+		cleanup();
+	}
+	Vulkan_renderer(const Vulkan_renderer&) = delete;
+
 	/**
 	* @brief Initializes the Vulkan renderer
 	*/
@@ -32,7 +42,7 @@ public:
 	void main_loop();
 private:
 	const int max_frames_in_flight = 2;
-	GLFWwindow* window;
+	GLFWwindow* window = nullptr;
 
 	const std::vector<const char*> validation_layers = {
 		"VK_LAYER_KHRONOS_validation"

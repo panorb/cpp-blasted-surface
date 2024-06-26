@@ -96,6 +96,13 @@ TEST_CASE("Graphs can be created and manipulated", "[graph]") {
 			REQUIRE(copy.get_node_count() == 101);
 			REQUIRE(graph.get_node_count() == 100);
 		}
+
+		SECTION("Removing nodes from graph corrects indices accordingly")
+		{
+			graph.remove_node(50);
+			REQUIRE(graph.get_node_count() == 99);
+			REQUIRE(graph.get_node(50)->get_index() == 50);
+		}
 	}
 
 	SECTION("Graph edges can be created via adjacency matrix")

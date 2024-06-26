@@ -3,10 +3,10 @@
 #include "graph.hpp"
 
 namespace blast {
-	class AntColonyOptimizer
+	class Ant_colony_optimizer
 	{
 	public:
-		AntColonyOptimizer(const int ant_count, const int iteration_count) : ant_count(ant_count), iteration_count(iteration_count) {}
+		Ant_colony_optimizer(const int ant_count, const int iteration_count) : ant_count(ant_count), iteration_count(iteration_count) {}
 		int ant_count;
 		int iteration_count;
 
