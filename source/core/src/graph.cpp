@@ -10,7 +10,7 @@ void blast::Graph::add_node(const std::shared_ptr<blast::Node>& node)
 {
 	nodes.push_back(node);
 	nodes.back()->index = nodes.size() - 1;
-	adj_list.push_back(std::vector<std::pair<int, size_t>>());
+	adj_list.push_back(std::vector<std::pair<float, size_t>>());
 }
 
 void blast::Graph::remove_node(const size_t index) {
@@ -35,6 +35,11 @@ void blast::Graph::remove_node(const size_t index) {
 			}
 		}
 	}
+
+	// Correct indices of all following nodes
+	for (size_t i = index; i < nodes.size(); i++) {
+		nodes[i]->index = i;
+	}
 }
 
 std::shared_ptr<blast::Node> blast::Graph::get_node(size_t index) const
@@ -44,7 +49,7 @@ std::shared_ptr<blast::Node> blast::Graph::get_node(size_t index) const
 	return nodes[index];
 }
 
-void blast::Graph::add_directed_edge(const size_t from, const size_t to, const int weight)
+void blast::Graph::add_directed_edge(const size_t from, const size_t to, const float weight)
 {
 	if (from == to || from >= adj_list.size() || to >= adj_list.size() || exists_edge(from, to)) {
 		return;
@@ -53,7 +58,7 @@ void blast::Graph::add_directed_edge(const size_t from, const size_t to, const i
 	adj_list[from].push_back(std::make_pair(weight, to));
 }
 
-void blast::Graph::add_undirected_edge(const size_t a, const size_t b, const int weight)
+void blast::Graph::add_undirected_edge(const size_t a, const size_t b, const float weight)
 {
 	add_directed_edge(a, b, weight);
 	add_directed_edge(b, a, weight);
@@ -76,7 +81,7 @@ void blast::Graph::remove_undirected_edge(size_t a, size_t b)
 	remove_directed_edge(b, a);
 }
 
-int blast::Graph::get_edge_weight(const size_t from, const size_t to) const
+float blast::Graph::get_edge_weight(const size_t from, const size_t to) const
 {
 	if (from >= nodes.size() || to >= nodes.size()) return 0;
 
@@ -93,7 +98,7 @@ int blast::Graph::get_edge_weight(const size_t from, const size_t to) const
 
 bool blast::Graph::exists_edge(const size_t from, const size_t to) const
 {
-	return get_edge_weight(from, to) != 0;
+	return get_edge_weight(from, to) != 0.f;
 }
 
 size_t blast::Graph::get_node_count() const
@@ -130,13 +135,13 @@ int blast::get_length_of_path(const Graph& graph, const std::vector<size_t>& pat
 	return length;
 }
 
-void blast::add_edges_from_adjacency_matrix(Graph& graph, const std::vector<std::vector<int>>& adj_matrix)
+void blast::add_edges_from_adjacency_matrix(Graph& graph, const std::vector<std::vector<float>>& adj_matrix)
 {
 	for (int i = 0; i < adj_matrix.size(); i++)
 	{
 		for (int j = 0; j < adj_matrix[i].size(); j++)
 		{
-			if (adj_matrix[i][j] != -1)
+			if (adj_matrix[i][j] != 0.f)
 			{
 				graph.add_directed_edge(i, j, adj_matrix[i][j]);
 			}

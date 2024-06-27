@@ -13,12 +13,12 @@ TEST_CASE("The Ant colony optimizer works as expected", "[aco]")
 	graph.add_node(std::make_shared<blast::Node>("Node D"));
 	graph.add_node(std::make_shared<blast::Node>("Node E"));
 
-	const std::vector<std::vector<int>> edges = {
-		{ -1,  3,  4, -1, 2 },
-		{  3, -1,  2,  5, 1 },
-		{  4,  2, -1,  1, 6 },
-		{ -1,  5,  1, -1, 3 },
-		{  2,  1,  6,  3, -1 }
+	const std::vector<std::vector<float>> edges = {
+		{ 0.f,  3.f,  4.f, 0.f, 2.f },
+		{  3.f, 0.f,  2.f,  5.f, 1.f },
+		{  4.f,  2.f, 0.f,  1.f, 6.f },
+		{ 0.f,  5.f,  1.f, 0.f, 3.f },
+		{  2.f,  1.f,  6.f,  3.f, 0.f }
 	};
 	blast::add_edges_from_adjacency_matrix(graph, edges);
 

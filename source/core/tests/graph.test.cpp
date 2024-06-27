@@ -33,19 +33,19 @@ TEST_CASE("Graphs can be created and manipulated", "[graph]") {
 		graph.add_node(node_b);
 
 		SECTION("Creating weighted directed edge") {
-			graph.add_directed_edge(node_a->get_index(), node_b->get_index(), 10);
+			graph.add_directed_edge(node_a->get_index(), node_b->get_index(), 10.f);
 
 			REQUIRE(graph.exists_edge(node_a->get_index(), node_b->get_index()));
-			REQUIRE(graph.get_edge_weight(node_a->get_index(), node_b->get_index()) == 10);
+			REQUIRE(graph.get_edge_weight(node_a->get_index(), node_b->get_index()) == 10.f);
 		}
 
 		SECTION("Creating weighted undirected edge") {
 			graph.add_undirected_edge(node_a->get_index(), node_b->get_index(), 10);
 
 			REQUIRE(graph.exists_edge(node_a->get_index(), node_b->get_index()));
-			REQUIRE(graph.get_edge_weight(node_a->get_index(), node_b->get_index()) == 10);
+			REQUIRE(graph.get_edge_weight(node_a->get_index(), node_b->get_index()) == 10.f);
 			REQUIRE(graph.exists_edge(node_b->get_index(), node_a->get_index()));
-			REQUIRE(graph.get_edge_weight(node_b->get_index(), node_a->get_index()) == 10);
+			REQUIRE(graph.get_edge_weight(node_b->get_index(), node_a->get_index()) == 10.f);
 		}
 	}
 
@@ -57,14 +57,14 @@ TEST_CASE("Graphs can be created and manipulated", "[graph]") {
 			label += std::to_string(i);
 			auto node = std::make_shared<blast::Node>(label);
 			graph.add_node(node);
-			graph.add_undirected_edge(i - 1, i, 1);
+			graph.add_undirected_edge(i - 1, i, 1.f);
 		}
 
 		REQUIRE(graph.get_node(99)->get_label() == "Node 99");
 		REQUIRE(graph.exists_edge(98, 99));
-		REQUIRE(graph.get_edge_weight(98, 99) == 1);
+		REQUIRE(graph.get_edge_weight(98, 99) == 1.f);
 		REQUIRE(graph.exists_edge(99, 98));
-		REQUIRE(graph.get_edge_weight(99, 98) == 1);
+		REQUIRE(graph.get_edge_weight(99, 98) == 1.f);
 		REQUIRE(graph.get_node_count() == 100);
 
 		SECTION("Edges can be cleared") {
@@ -86,7 +86,7 @@ TEST_CASE("Graphs can be created and manipulated", "[graph]") {
 
 			REQUIRE(copy.get_node(99)->get_label() == "Node 99");
 			REQUIRE(copy.exists_edge(98, 99));
-			REQUIRE(copy.get_edge_weight(98, 99) == 1);
+			REQUIRE(copy.get_edge_weight(98, 99) == 1.f);
 
 			copy.remove_undirected_edge(98, 99);
 			REQUIRE_FALSE(copy.exists_edge(98, 99));
@@ -113,17 +113,17 @@ TEST_CASE("Graphs can be created and manipulated", "[graph]") {
 		graph.add_node(std::make_shared<blast::Node>("Node D"));
 		graph.add_node(std::make_shared<blast::Node>("Node E"));
 
-		const std::vector<std::vector<int>> edges = {
-		{ -1,  3,  4, -1, 2 },
-		{  3, -1,  2,  5, 1 },
-		{  4,  2, -1,  1, 6 },
-		{ -1,  5,  1, -1, 3 },
-		{  2,  1,  6,  3, -1 }
+		const std::vector<std::vector<float>> edges = {
+		{ 0.f,  3.f,  4.f, 0.f, 2.f },
+		{  3.f, 0.f,  2.f,  5.f, 1.f },
+		{  4.f,  2.f, 0.f,  1.f, 6.f },
+		{ 0.f,  5.f,  1.f, 0.f, 3.f },
+		{  2.f,  1.f,  6.f,  3.f, 0.f }
 		};
 
 		blast::add_edges_from_adjacency_matrix(graph, edges);
-		REQUIRE(graph.get_edge_weight(0, 1) == 3);
-		REQUIRE(graph.get_edge_weight(0, 2) == 4);
+		REQUIRE(graph.get_edge_weight(0, 1) == 3.f);
+		REQUIRE(graph.get_edge_weight(0, 2) == 4.f);
 		REQUIRE_FALSE(graph.exists_edge(0, 3));
 		REQUIRE(graph.get_edge_weight(0, 4) == 2);
 

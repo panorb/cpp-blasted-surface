@@ -1,6 +1,6 @@
 #include "blast/ant_colony_optimizer.hpp"
 
-std::vector<size_t> blast::Ant_colony_optimizer::execute(blast::Graph& node_graph)
+std::vector<size_t> blast::Ant_colony_optimizer::execute(const blast::Graph& node_graph)
 {
 	blast::Graph pheromone_graph{ node_graph }; // This copy of the graph will store the pheromone values
 	pheromone_graph.clear_edges(); // Clear all edges from the graph
@@ -24,7 +24,7 @@ std::vector<size_t> blast::Ant_colony_optimizer::construct_solution(const blast:
 	size_t node_count = node_graph.get_node_count();
 
 	std::vector<size_t> best_solution;
-	int best_solution_length = INT_MAX;
+	int best_solution_const = INT_MAX;
 
 	// TODO: This could totally be parallelized
 	for (int i = 0; i < ant_count; i++)
@@ -45,11 +45,11 @@ std::vector<size_t> blast::Ant_colony_optimizer::construct_solution(const blast:
 			solution.push_back(node->get_index());
 		}
 
-		int solution_length = blast::get_length_of_path(node_graph, solution, true);
-		if (solution_length < best_solution_length)
+		int solution_cost = blast::get_length_of_path(node_graph, solution, true);
+		if (solution_cost < best_solution_const)
 		{
 			best_solution = solution;
-			best_solution_length = solution_length;
+			best_solution_const = solution_cost;
 		}
 	}
 
@@ -63,5 +63,19 @@ void blast::Ant_colony_optimizer::global_pheromone_update(blast::Graph& pheromon
 
 void blast::Ant_colony_optimizer::evaporate_pheromone(blast::Graph& pheromone_graph)
 {
-	// TODO: Implement this
+	for (size_t i = 0; i < pheromone_graph.get_node_count(); i++)
+	{
+		for (size_t j = 0; j < pheromone_graph.get_node_count(); j++)
+		{
+			float edge_weight = pheromone_graph.get_edge_weight(i, j);
+			if (edge_weight != -1) // pheromone_graph.exists_edge(i, j);
+			{
+				// Evaporate pheromone
+				edge_weight *= 0.9;
+				// Recreate edge with new pheromone amount
+				pheromone_graph.remove_directed_edge(i, j);
+				pheromone_graph.add_directed_edge(i, j, edge_weight);
+			}
+		}
+	}
 }
