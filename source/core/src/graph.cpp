@@ -119,9 +119,9 @@ void blast::Graph::clear_edges()
 	adj_list.resize(nodes.size());
 }
 
-int blast::get_length_of_path(const Graph& graph, const std::vector<size_t>& path, const bool loop)
+float blast::get_length_of_path(const Graph& graph, const std::vector<size_t>& path, const bool loop)
 {
-	int length = 0;
+	float length = 0.f;
 
 	for (size_t i = 0; i < path.size() - 1; i++) {
 		length += graph.get_edge_weight(path[i], path[i + 1]);

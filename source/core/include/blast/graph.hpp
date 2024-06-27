@@ -27,6 +27,6 @@ namespace blast {
 		void clear_edges();
 	};
 
-	int get_length_of_path(const Graph& graph, const std::vector<size_t>& path, bool loop);
+	float get_length_of_path(const Graph& graph, const std::vector<size_t>& path, bool loop);
 	void add_edges_from_adjacency_matrix(Graph& graph, const std::vector<std::vector<float>>& adj_matrix);
 }; // namespace blast
