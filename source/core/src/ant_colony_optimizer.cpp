@@ -24,7 +24,7 @@ std::vector<size_t> blast::Ant_colony_optimizer::construct_solution(const blast:
 	size_t node_count = node_graph.get_node_count();
 
 	std::vector<size_t> best_solution;
-	int best_solution_const = INT_MAX;
+	float best_solution_const = std::numeric_limits<float>::max();
 
 	// TODO: This could totally be parallelized
 	for (int i = 0; i < ant_count; i++)
@@ -45,11 +45,12 @@ std::vector<size_t> blast::Ant_colony_optimizer::construct_solution(const blast:
 			solution.push_back(node->get_index());
 		}
 
-		int solution_cost = blast::get_length_of_path(node_graph, solution, true);
-		if (solution_cost < best_solution_const)
+		std::optional<float> solution_cost = blast::get_length_of_path(node_graph, solution, true);
+
+		if (solution_cost.value_or(std::numeric_limits<float>::max()) < best_solution_const)
 		{
 			best_solution = solution;
-			best_solution_const = solution_cost;
+			best_solution_const = *solution_cost;
 		}
 	}
 
@@ -58,7 +59,14 @@ std::vector<size_t> blast::Ant_colony_optimizer::construct_solution(const blast:
 
 void blast::Ant_colony_optimizer::global_pheromone_update(blast::Graph& pheromone_graph, const std::vector<size_t>& best_solution)
 {
-	// TODO: Implement this
+
+	for (size_t i = 0; i < pheromone_graph.get_node_count(); i++)
+	{
+		for (size_t j = 0; j < pheromone_graph.get_node_count(); j++)
+		{
+
+		}
+	}
 }
 
 void blast::Ant_colony_optimizer::evaporate_pheromone(blast::Graph& pheromone_graph)
@@ -67,14 +75,14 @@ void blast::Ant_colony_optimizer::evaporate_pheromone(blast::Graph& pheromone_gr
 	{
 		for (size_t j = 0; j < pheromone_graph.get_node_count(); j++)
 		{
-			float edge_weight = pheromone_graph.get_edge_weight(i, j);
-			if (edge_weight != -1) // pheromone_graph.exists_edge(i, j);
+			if (auto edge_weight = pheromone_graph.get_edge_weight(i, j); edge_weight.has_value()) // pheromone_graph.exists_edge(i, j);
 			{
+				float edge_weight_val = *edge_weight;
 				// Evaporate pheromone
-				edge_weight *= 0.9;
+				edge_weight_val *= 0.9;
 				// Recreate edge with new pheromone amount
 				pheromone_graph.remove_directed_edge(i, j);
-				pheromone_graph.add_directed_edge(i, j, edge_weight);
+				pheromone_graph.add_directed_edge(i, j, edge_weight_val);
 			}
 		}
 	}

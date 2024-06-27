@@ -1,7 +1,8 @@
 #include <blast/graph.hpp>
 #include <catch.hpp>
 
-TEST_CASE("Graphs can be created and manipulated", "[graph]") {
+TEST_CASE("Graphs can be created and manipulated", "[graph]")
+{
 	blast::Graph graph;
 	REQUIRE(graph.get_node_count() == 0);
 
@@ -47,6 +48,27 @@ TEST_CASE("Graphs can be created and manipulated", "[graph]") {
 			REQUIRE(graph.exists_edge(node_b->get_index(), node_a->get_index()));
 			REQUIRE(graph.get_edge_weight(node_b->get_index(), node_a->get_index()) == 10.f);
 		}
+	}
+
+	SECTION("Length of path is correctly calculated")
+	{
+		graph.add_node(std::make_shared<blast::Node>("Node A"));
+		graph.add_node(std::make_shared<blast::Node>("Node B"));
+		graph.add_node(std::make_shared<blast::Node>("Node C"));
+
+		graph.add_directed_edge(0, 1, 3);
+		graph.add_directed_edge(1, 2, 3);
+		graph.add_directed_edge(2, 0, 3);
+
+		std::vector<size_t> path = { 0, 1, 2 };
+
+		auto path_length = blast::get_length_of_path(graph, path, true);
+		REQUIRE(path_length.has_value());
+		REQUIRE(*path_length == 9.f);
+
+		path = { 2, 1, 0 };
+		path_length = blast::get_length_of_path(graph, path, true);
+		REQUIRE(!path_length.has_value());
 	}
 
 	SECTION("Creating graph with 100 connected nodes") {
@@ -122,29 +144,29 @@ TEST_CASE("Graphs can be created and manipulated", "[graph]") {
 		};
 
 		blast::add_edges_from_adjacency_matrix(graph, edges);
-		REQUIRE(graph.get_edge_weight(0, 1) == 3.f);
-		REQUIRE(graph.get_edge_weight(0, 2) == 4.f);
+		REQUIRE(graph.get_edge_weight(0, 1).value_or(0.f) == 3.f);
+		REQUIRE(graph.get_edge_weight(0, 2).value_or(0.f) == 4.f);
 		REQUIRE_FALSE(graph.exists_edge(0, 3));
-		REQUIRE(graph.get_edge_weight(0, 4) == 2);
+		REQUIRE(graph.get_edge_weight(0, 4).value_or(0.f) == 2.f);
 
-		REQUIRE(graph.get_edge_weight(1, 0) == 3);
-		REQUIRE(graph.get_edge_weight(1, 2) == 2);
-		REQUIRE(graph.get_edge_weight(1, 3) == 5);
-		REQUIRE(graph.get_edge_weight(1, 4) == 1);
+		REQUIRE(graph.get_edge_weight(1, 0).value_or(0.f) == 3.f);
+		REQUIRE(graph.get_edge_weight(1, 2).value_or(0.f) == 2.f);
+		REQUIRE(graph.get_edge_weight(1, 3).value_or(0.f) == 5.f);
+		REQUIRE(graph.get_edge_weight(1, 4).value_or(0.f) == 1.f);
 
-		REQUIRE(graph.get_edge_weight(2, 0) == 4);
-		REQUIRE(graph.get_edge_weight(2, 1) == 2);
-		REQUIRE(graph.get_edge_weight(2, 3) == 1);
-		REQUIRE(graph.get_edge_weight(2, 4) == 6);
+		REQUIRE(graph.get_edge_weight(2, 0).value_or(0.f) == 4.f);
+		REQUIRE(graph.get_edge_weight(2, 1).value_or(0.f) == 2.f);
+		REQUIRE(graph.get_edge_weight(2, 3).value_or(0.f) == 1.f);
+		REQUIRE(graph.get_edge_weight(2, 4).value_or(0.f) == 6.f);
 
 		REQUIRE_FALSE(graph.exists_edge(3, 0));
-		REQUIRE(graph.get_edge_weight(3, 1) == 5);
-		REQUIRE(graph.get_edge_weight(3, 2) == 1);
-		REQUIRE(graph.get_edge_weight(3, 4) == 3);
+		REQUIRE(graph.get_edge_weight(3, 1).value_or(0.f) == 5.f);
+		REQUIRE(graph.get_edge_weight(3, 2).value_or(0.f) == 1.f);
+		REQUIRE(graph.get_edge_weight(3, 4).value_or(0.f) == 3.f);
 
-		REQUIRE(graph.get_edge_weight(4, 0) == 2);
-		REQUIRE(graph.get_edge_weight(4, 1) == 1);
-		REQUIRE(graph.get_edge_weight(4, 2) == 6);
-		REQUIRE(graph.get_edge_weight(4, 3) == 3);
+		REQUIRE(graph.get_edge_weight(4, 0).value_or(0.f) == 2.f);
+		REQUIRE(graph.get_edge_weight(4, 1).value_or(0.f) == 1.f);
+		REQUIRE(graph.get_edge_weight(4, 2).value_or(0.f) == 6.f);
+		REQUIRE(graph.get_edge_weight(4, 3).value_or(0.f) == 3.f);
 	}
 }

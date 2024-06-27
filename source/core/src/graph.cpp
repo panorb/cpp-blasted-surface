@@ -81,24 +81,24 @@ void blast::Graph::remove_undirected_edge(size_t a, size_t b)
 	remove_directed_edge(b, a);
 }
 
-float blast::Graph::get_edge_weight(const size_t from, const size_t to) const
+std::optional<float> blast::Graph::get_edge_weight(const size_t from, const size_t to) const
 {
-	if (from >= nodes.size() || to >= nodes.size()) return 0;
+	if (from >= nodes.size() || to >= nodes.size()) return {};
 
-	auto& neighbors = adj_list[from];
+	const auto& neighbors = adj_list[from];
 
-	for (auto& neighbor : neighbors) {
+	for (const auto& neighbor : neighbors) {
 		if (neighbor.second == to) {
 			return neighbor.first;
 		}
 	}
 
-	return 0;
+	return {};
 }
 
 bool blast::Graph::exists_edge(const size_t from, const size_t to) const
 {
-	return get_edge_weight(from, to) != 0.f;
+	return get_edge_weight(from, to).has_value();
 }
 
 size_t blast::Graph::get_node_count() const
@@ -119,17 +119,21 @@ void blast::Graph::clear_edges()
 	adj_list.resize(nodes.size());
 }
 
-float blast::get_length_of_path(const Graph& graph, const std::vector<size_t>& path, const bool loop)
+std::optional<float> blast::get_length_of_path(const Graph& graph, const std::vector<size_t>& path, const bool loop)
 {
 	float length = 0.f;
 
 	for (size_t i = 0; i < path.size() - 1; i++) {
-		length += graph.get_edge_weight(path[i], path[i + 1]);
+		const auto edge_weight = graph.get_edge_weight(path[i], path[i + 1]);
+		if (!edge_weight.has_value()) return {}; // Invalid path
+		length += *edge_weight;
 	}
 
 	if (loop)
 	{
-		length += graph.get_edge_weight(path.back(), path.front());
+		const auto edge_weight = graph.get_edge_weight(path.back(), path.front());
+		if (!edge_weight.has_value()) return {}; // Invalid path
+		length += *edge_weight;
 	}
 
 	return length;
