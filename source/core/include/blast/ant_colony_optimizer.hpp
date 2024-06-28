@@ -13,8 +13,9 @@ namespace blast {
 
 		std::vector<size_t> execute(const blast::Graph& node_graph);
 	private:
-		std::vector<size_t> construct_solution(const blast::Graph& pheromone_graph, const blast::Graph& node_graph) const;
-		void global_pheromone_update(blast::Graph& pheromone_graph, const std::vector<size_t>& best_solution);
+		std::vector<std::vector<size_t>> construct_solution(const blast::Graph& pheromone_graph,
+		                                                    const blast::Graph& node_graph) const;
+		void global_pheromone_update(const blast::Graph& node_graph, blast::Graph& pheromone_graph, const std::vector<std::vector<size_t>>& taken_paths);
 		void evaporate_pheromone(blast::Graph& pheromone_graph);
 	};
 } ; // namespace blast

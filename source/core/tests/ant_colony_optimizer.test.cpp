@@ -26,8 +26,9 @@ TEST_CASE("The Ant colony optimizer works as expected", "[aco]")
 	std::vector<size_t> path = aco.execute(graph);
 
 	std::unordered_set<size_t> included_nodes{ path.begin(), path.end() };
-	
+
 	REQUIRE(included_nodes.size() == path.size()); // No duplicates
+	REQUIRE(included_nodes.size() == graph.get_node_count()); // All nodes are in the path
 	for (size_t i = 0; i < path.size() - 1; i++)
 	{
 		REQUIRE(graph.exists_edge(path[i], path[i + 1])); // Path is valid

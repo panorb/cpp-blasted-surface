@@ -25,6 +25,7 @@ namespace blast {
 		[[nodiscard]] std::optional<float> get_edge_weight(size_t from, size_t to) const;
 		[[nodiscard]] bool exists_edge(size_t from, size_t to) const;
 		[[nodiscard]] size_t get_node_count() const;
+		std::vector<std::pair<float, size_t>> get_connected_nodes(const size_t from) const;
 		void clear();
 		void clear_edges();
 	};

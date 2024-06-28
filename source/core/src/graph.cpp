@@ -106,6 +106,11 @@ size_t blast::Graph::get_node_count() const
 	return nodes.size();
 }
 
+std::vector<std::pair<float, size_t>> blast::Graph::get_connected_nodes(const size_t from) const
+{
+	return adj_list[from];
+}
+
 void blast::Graph::clear()
 {
 	nodes.clear();
@@ -122,6 +127,8 @@ void blast::Graph::clear_edges()
 std::optional<float> blast::get_length_of_path(const Graph& graph, const std::vector<size_t>& path, const bool loop)
 {
 	float length = 0.f;
+
+	if (path.size() <= 1) return 0.f;
 
 	for (size_t i = 0; i < path.size() - 1; i++) {
 		const auto edge_weight = graph.get_edge_weight(path[i], path[i + 1]);
