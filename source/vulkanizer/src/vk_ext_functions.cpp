@@ -1,5 +1,5 @@
 // ReSharper disable CppInconsistentNaming
-#include <vulkan_ext_functions.hpp>
+#include <vk_ext_functions.hpp>
 
 VkResult vkCreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
                                         const VkAllocationCallbacks* pAllocator,
