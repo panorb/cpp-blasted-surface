@@ -76,7 +76,7 @@ void blast::Visualizer::render()
 				perpendicular = Vector2Normalize(perpendicular);
 				Vector2 middle = { (get_node(i)->render_position.x + get_node(j)->render_position.x) / 2, (get_node(i)->render_position.y + get_node(j)->render_position.y) / 2 };
 				Vector2 text_position = { static_cast<float>(middle.x + (perpendicular.x * 24.0)), static_cast<float>(middle.y + (perpendicular.y * 12.0)) };
-				DrawTextEx(GetFontDefault(), std::to_string(graph->get_edge_weight(i, j)).c_str(), text_position, 14, 1, BLACK);
+				DrawTextEx(GetFontDefault(), std::to_string(*graph->get_edge_weight(i, j)).c_str(), text_position, 14, 1, BLACK);
 			}
 		}
 	}
