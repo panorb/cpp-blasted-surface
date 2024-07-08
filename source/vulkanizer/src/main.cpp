@@ -3,6 +3,8 @@
 #include "blast/log.hpp"
 
 int main() {
+	blast::log::init();
+
 	Vulkan_renderer* renderer = Vulkan_renderer::get_instance();
 	
 	// renderer->init();

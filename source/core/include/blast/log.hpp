@@ -1,8 +1,14 @@
 #pragma once
 #include <spdlog/spdlog.h>
+#include <spdlog/cfg/env.h>
 
 namespace blast {
 	namespace log {
+		inline void init()
+		{
+			spdlog::cfg::load_env_levels();
+		}
+
 		template<typename T>
 		void info(const T& msg)
 		{
