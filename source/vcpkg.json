@@ -6,7 +6,8 @@
     "catch2",
 		"glfw3",
 		"glm",
-		"pcl"
+		"pcl",
+		"spdlog"
   ]
 }
 

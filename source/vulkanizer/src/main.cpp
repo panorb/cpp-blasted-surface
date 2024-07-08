@@ -1,5 +1,7 @@
 #include <vk_renderer.hpp>
 
+#include "blast/log.hpp"
+
 int main() {
 	Vulkan_renderer* renderer = Vulkan_renderer::get_instance();
 	
