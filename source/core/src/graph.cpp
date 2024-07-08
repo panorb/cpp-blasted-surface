@@ -1,4 +1,5 @@
 #include "blast/graph.hpp"
+#include <spdlog/spdlog.h>
 
 blast::Graph::Graph(const Graph& original)
 {
@@ -14,7 +15,12 @@ void blast::Graph::add_node(const std::shared_ptr<blast::Node>& node)
 }
 
 void blast::Graph::remove_node(const size_t index) {
-	if (index >= nodes.size()) return;
+	spdlog::trace("Removing node {}", index);
+	if (index >= nodes.size())
+	{
+		spdlog::warn("Removing node {} failed, node does not exist", index);
+		return;
+	}
 
 	nodes.erase(nodes.begin() + index);
 	adj_list.erase(adj_list.begin() + index);
@@ -44,14 +50,19 @@ void blast::Graph::remove_node(const size_t index) {
 
 std::shared_ptr<blast::Node> blast::Graph::get_node(size_t index) const
 {
-	if (index >= nodes.size()) return nullptr;
+	if (index >= nodes.size()) {
+		spdlog::warn("Getting node {} failed, out-of-bounds. Returning nullptr...", index);
+		return nullptr;
+	}
 
 	return nodes[index];
 }
 
 void blast::Graph::add_directed_edge(const size_t from, const size_t to, const float weight)
 {
+	spdlog::trace("Adding directed edge from Node {} to Node {}", from, to);
 	if (from == to || from >= adj_list.size() || to >= adj_list.size() || exists_edge(from, to)) {
+		spdlog::warn("Adding the edge was aborted, either one of the nodes does not exist, it is the same node twice or the edge already exists");
 		return;
 	}
 
@@ -77,6 +88,7 @@ void blast::Graph::add_or_update_undirected_edge(size_t a, size_t b, float weigh
 }
 
 void blast::Graph::remove_directed_edge(size_t from, size_t to) {
+	spdlog::trace("Removing directed edge from Node {} to Node {}", from, to);
 	auto& neighbors = adj_list[from];
 
 	for (auto it = neighbors.begin(); it != neighbors.end(); it++) {
@@ -85,6 +97,8 @@ void blast::Graph::remove_directed_edge(size_t from, size_t to) {
 			return;
 		}
 	}
+
+	spdlog::warn("Removing the edge failed, edge does not exist.");
 }
 
 void blast::Graph::remove_undirected_edge(size_t a, size_t b)
@@ -120,6 +134,7 @@ size_t blast::Graph::get_node_count() const
 
 std::vector<std::pair<float, size_t>> blast::Graph::get_connected_nodes(const size_t from) const
 {
+	spdlog::trace("Getting connected nodes of node {}", from);
 	return adj_list[from];
 }
 

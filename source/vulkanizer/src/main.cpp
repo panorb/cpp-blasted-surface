@@ -1,9 +1,9 @@
 #include <vk_renderer.hpp>
 
-#include "blast/log.hpp"
+#include <spdlog/cfg/env.h>
 
 int main() {
-	blast::log::init();
+	spdlog::cfg::load_env_levels();
 
 	Vulkan_renderer* renderer = Vulkan_renderer::get_instance();
 	

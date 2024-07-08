@@ -1,8 +1,6 @@
 #include <blast/graph.hpp>
 #include <catch.hpp>
 
-#include "blast/log.hpp"
-
 TEST_CASE("Graphs can be created and manipulated", "[graph]")
 {
 	blast::Graph graph;

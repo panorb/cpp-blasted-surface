@@ -17,7 +17,7 @@ namespace blast {
 
 		void add_node(const std::shared_ptr<Node>& node);
 		void remove_node(size_t index);
-		std::shared_ptr<Node> get_node(size_t index) const;
+		[[nodiscard]] std::shared_ptr<Node> get_node(size_t index) const;
 		void add_directed_edge(size_t from, size_t to, float weight);
 		void add_undirected_edge(size_t a, size_t b, float weight);
 		void add_or_update_directed_edge(size_t from, size_t to, float weight);
@@ -27,7 +27,7 @@ namespace blast {
 		[[nodiscard]] std::optional<float> get_edge_weight(size_t from, size_t to) const;
 		[[nodiscard]] bool exists_edge(size_t from, size_t to) const;
 		[[nodiscard]] size_t get_node_count() const;
-		std::vector<std::pair<float, size_t>> get_connected_nodes(const size_t from) const;
+		[[nodiscard]] std::vector<std::pair<float, size_t>> get_connected_nodes(const size_t from) const;
 		void clear();
 		void clear_edges();
 	};

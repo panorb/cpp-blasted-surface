@@ -1,6 +1,6 @@
 #include <catch2/reporters/catch_reporter_event_listener.hpp>
 #include <catch2/reporters/catch_reporter_registrars.hpp>
-#include <blast/log.hpp>
+#include <spdlog/cfg/env.h>
 
 class Test_run_listener final : public Catch::EventListenerBase
 {
@@ -9,7 +9,7 @@ public:
 
 	void testRunStarting(Catch::TestRunInfo const& testRunInfo) override
 	{
-		blast::log::init();
+		spdlog::cfg::load_env_levels();
 	}
 	
 };
