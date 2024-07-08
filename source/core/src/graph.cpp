@@ -64,6 +64,18 @@ void blast::Graph::add_undirected_edge(const size_t a, const size_t b, const flo
 	add_directed_edge(b, a, weight);
 }
 
+void blast::Graph::add_or_update_directed_edge(size_t from, size_t to, float weight)
+{
+	remove_directed_edge(from, to);
+	add_directed_edge(from, to, weight);
+}
+
+void blast::Graph::add_or_update_undirected_edge(size_t a, size_t b, float weight)
+{
+	add_or_update_directed_edge(a, b, weight);
+	add_or_update_directed_edge(b, a, weight);
+}
+
 void blast::Graph::remove_directed_edge(size_t from, size_t to) {
 	auto& neighbors = adj_list[from];
 

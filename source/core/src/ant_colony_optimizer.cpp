@@ -116,8 +116,7 @@ void blast::Ant_colony_optimizer::global_pheromone_update(const blast::Graph& no
 			float edge_weight = *pheromone_graph.get_edge_weight(from, to);
 			edge_weight += pheromone_per_edge;
 
-			pheromone_graph.remove_directed_edge(from, to);
-			pheromone_graph.add_directed_edge(from, to, edge_weight);
+			pheromone_graph.add_or_update_directed_edge(from, to, edge_weight);
 		}
 	}
 }
@@ -134,8 +133,7 @@ void blast::Ant_colony_optimizer::evaporate_pheromone(blast::Graph& pheromone_gr
 				// Evaporate pheromone
 				edge_weight_val *= 0.9;
 				// Recreate edge with new pheromone amount
-				pheromone_graph.remove_directed_edge(i, j);
-				pheromone_graph.add_directed_edge(i, j, edge_weight_val);
+				pheromone_graph.add_or_update_directed_edge(i, j, edge_weight_val);
 			}
 		}
 	}
