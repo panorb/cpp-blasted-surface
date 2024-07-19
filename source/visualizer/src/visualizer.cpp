@@ -53,7 +53,7 @@ void blast::Visualizer::update()
 		change_state(std::make_unique<Move_state>());
 	}
 	else if (IsKeyPressed(KEY_A)) {
-		change_state(std::make_unique<Run_aco_state>(std::make_unique<Ant_colony_optimizer>(graph.get(), 5, 100)));
+		change_state(std::make_unique<Run_aco_state>(std::make_unique<Ant_colony_optimizer>(graph.get(), 1, 100)));
 	}
 
 	active_state->update(*this);
@@ -70,17 +70,19 @@ void blast::Visualizer::render()
 
 	active_state->draw(*this);
 
-	for (int i = 0; i < graph->get_node_count(); i++) {
-		for (int j = 0; j < graph->get_node_count(); j++) {
-			if (i < j && graph->exists_edge(i, j)) {
-				DrawLineEx(get_node(i)->render_position, get_node(j)->render_position, 3.0, BLACK);
-				Vector2 direction = { get_node(j)->render_position.x - get_node(i)->render_position.x, get_node(j)->render_position.y - get_node(i)->render_position.y };
-				direction = Vector2Normalize(direction);
-				Vector2 perpendicular = PerpendicularCounterClockwise(direction);
-				perpendicular = Vector2Normalize(perpendicular);
-				Vector2 middle = { (get_node(i)->render_position.x + get_node(j)->render_position.x) / 2, (get_node(i)->render_position.y + get_node(j)->render_position.y) / 2 };
-				Vector2 text_position = { static_cast<float>(middle.x + (perpendicular.x * 24.0)), static_cast<float>(middle.y + (perpendicular.y * 12.0)) };
-				DrawTextEx(GetFontDefault(), std::to_string(*graph->get_edge_weight(i, j)).c_str(), text_position, 14, 1, BLACK);
+	if (draw_edges) {
+		for (int i = 0; i < graph->get_node_count(); i++) {
+			for (int j = 0; j < graph->get_node_count(); j++) {
+				if (i < j && graph->exists_edge(i, j)) {
+					DrawLineEx(get_node(i)->render_position, get_node(j)->render_position, 3.0, BLACK);
+					Vector2 direction = { get_node(j)->render_position.x - get_node(i)->render_position.x, get_node(j)->render_position.y - get_node(i)->render_position.y };
+					direction = Vector2Normalize(direction);
+					Vector2 perpendicular = PerpendicularCounterClockwise(direction);
+					perpendicular = Vector2Normalize(perpendicular);
+					Vector2 middle = { (get_node(i)->render_position.x + get_node(j)->render_position.x) / 2, (get_node(i)->render_position.y + get_node(j)->render_position.y) / 2 };
+					Vector2 text_position = { static_cast<float>(middle.x + (perpendicular.x * 24.0)), static_cast<float>(middle.y + (perpendicular.y * 12.0)) };
+					DrawTextEx(GetFontDefault(), std::to_string(*graph->get_edge_weight(i, j)).c_str(), text_position, 14, 1, BLACK);
+				}
 			}
 		}
 	}
@@ -185,15 +187,39 @@ void blast::Move_state::update(Visualizer& visualizer)
 	}
 }
 
+void blast::Run_aco_state::enter(Visualizer& visualizer)
+{
+	visualizer.draw_edges = false;
+	last_result = aco->execute_iteration();
+}
+
 void blast::Run_aco_state::update(Visualizer& visualizer)
 {
 	time_delta += GetFrameTime();
+
 
 	if (time_delta >= TIME_PER_STEP)
 	{
 		spdlog::info("Step");
 		time_delta = 0.0f;
 		aco->execute_iteration();
-		// aco->step();
 	}
+}
+
+void blast::Run_aco_state::draw(Visualizer& visualizer)
+{
+	auto graph = visualizer.graph;
+
+	for (int i = 0; i < graph->get_node_count(); i++) {
+		for (int j = 0; j < graph->get_node_count(); j++) {
+			if (i < j && last_result.pheromone_graph.exists_edge(i, j)) {
+				DrawLineEx(visualizer.get_node(i)->render_position, visualizer.get_node(j)->render_position, powf((*last_result.pheromone_graph.get_edge_weight(i, j)), 5.0f) * 5.f, RED);
+			}
+		}
+	}
+}
+
+void blast::Run_aco_state::exit(Visualizer& visualizer)
+{
+	visualizer.draw_edges = true;
 }

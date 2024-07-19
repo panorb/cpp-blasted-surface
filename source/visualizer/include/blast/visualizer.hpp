@@ -53,13 +53,17 @@ namespace blast {
 
 	class Run_aco_state final : public Visualizer_state {
 		std::unique_ptr<Ant_colony_optimizer> aco;
-		const float TIME_PER_STEP = 3.0f;
+		Ant_colony_optimizer_iteration_result last_result;
+		const float TIME_PER_STEP = 0.8f;
 		float time_delta = 0.0f;
 	public:
 		Run_aco_state() = delete;
 		explicit Run_aco_state(std::unique_ptr<Ant_colony_optimizer> aco): aco(std::move(aco)) {}
 		std::string name() override { return "Run ACO"; };
+		void enter(Visualizer& visualizer) override;
 		void update(Visualizer& visualizer) override;
+		void draw(Visualizer& visualizer) override;
+		void exit(Visualizer& visualizer) override;
 	};
 
 	class Visualizer {
@@ -70,6 +74,8 @@ namespace blast {
 		static constexpr int node_radius = 12;
 		static constexpr int edge_thickness = 3;
 		static constexpr auto default_node_color = BLACK;
+
+		bool draw_edges = true;
 
 		Visualizer(std::shared_ptr<blast::Graph> graph) : graph(graph) {};
 		std::shared_ptr<blast::Graph> graph;
