@@ -3,6 +3,7 @@
 
 blast::Graph::Graph(const Graph& original)
 {
+	// Node references are kept intact - ownership handled by shared_ptr
 	nodes = original.nodes;
 	adj_list = original.adj_list;
 }

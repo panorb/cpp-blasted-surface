@@ -1,4 +1,5 @@
 #include <blast/visualizer.hpp>
+#include <spdlog/spdlog.h>
 
 void blast::Visual_node::draw()
 {
@@ -9,7 +10,7 @@ void blast::Visual_node::draw()
 	           }, 14, 1, BLACK);
 }
 
-inline std::shared_ptr<blast::Visual_node> blast::Visualizer::get_node(int index)
+inline std::shared_ptr<blast::Visual_node> blast::Visualizer::get_node(size_t index) const
 {
 	return static_pointer_cast<Visual_node>(graph->get_node(index));
 }
@@ -50,6 +51,9 @@ void blast::Visualizer::update()
 	}
 	else if (IsKeyPressed(KEY_M)) {
 		change_state(std::make_unique<Move_state>());
+	}
+	else if (IsKeyPressed(KEY_A)) {
+		change_state(std::make_unique<Run_aco_state>(std::make_unique<Ant_colony_optimizer>(graph.get(), 5, 100)));
 	}
 
 	active_state->update(*this);
@@ -178,5 +182,18 @@ void blast::Move_state::update(Visualizer& visualizer)
 	}
 	else {
 		SetMouseCursor(MOUSE_CURSOR_DEFAULT);
+	}
+}
+
+void blast::Run_aco_state::update(Visualizer& visualizer)
+{
+	time_delta += GetFrameTime();
+
+	if (time_delta >= TIME_PER_STEP)
+	{
+		spdlog::info("Step");
+		time_delta = 0.0f;
+		aco->execute_iteration();
+		// aco->step();
 	}
 }

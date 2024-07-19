@@ -5,6 +5,6 @@ target_link_libraries(Core PRIVATE ${PCL_LIBRARIES})
 
 add_executable(CoreTest tests/graph.test.cpp tests/point_cloud.test.cpp tests/ant_colony_optimizer.test.cpp tests/setup.cpp)
 target_link_libraries(CoreTest PRIVATE Core Catch2::Catch2WithMain)
-set_target_properties(CoreTest PROPERTIES VS_DEBUGGER_ENVIRONMENT "SPDLOG_LEVEL=trace")
+set_target_properties(CoreTest PROPERTIES VS_DEBUGGER_ENVIRONMENT "SPDLOG_LEVEL=info")
 
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/tests/files DESTINATION ${CMAKE_CURRENT_BINARY_DIR})

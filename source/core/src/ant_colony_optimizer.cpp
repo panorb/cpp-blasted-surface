@@ -3,34 +3,88 @@
 #include <chrono>
 #include <random>
 #include <unordered_set>
+#include <spdlog/spdlog.h>
 
-std::vector<size_t> blast::Ant_colony_optimizer::execute(const blast::Graph& node_graph)
+void ensure_complete_graph(const blast::Graph& graph)
 {
-	blast::Graph pheromone_graph{ node_graph }; // This copy of the graph will store the pheromone values
-	// pheromone_graph.clear_edges(); // Clear all edges from the graph
+	for (size_t i = 0; i < graph.get_node_count(); i++)
+	{
+		for (size_t j = 0; j < graph.get_node_count(); j++)
+		{
+			if (i != j && !graph.exists_edge(i, j))
+			{
+				throw std::runtime_error("Graph is not complete");
+			}
+		}
+	}
+}
 
+blast::Ant_colony_optimizer::Ant_colony_optimizer(const Graph* node_graph, const int ant_count,
+	const int iteration_count, const float evaporation_rate, const float alpha, const float beta) : node_graph(node_graph), ant_count(ant_count), evaporation_rate(evaporation_rate), alpha(alpha), beta(beta)
+{
+	pheromone_graph = std::make_unique<Graph>(*node_graph); // This copy of the graph will store the pheromone values
+
+	// Change all pheromone values (stored in the graph edges) to 1.0f
+	for (size_t i = 0; i < pheromone_graph->get_node_count(); i++)
+	{
+		for (size_t j = 0; j < pheromone_graph->get_node_count(); j++)
+		{
+			pheromone_graph->add_or_update_directed_edge(i, j, 1.0f);
+		}
+	}
+}
+
+blast::Ant_colony_optimizer_iteration_result blast::Ant_colony_optimizer::execute_iteration()
+{
+	std::vector<std::vector<size_t>> solutions = construct_solutions();
+	global_pheromone_update(solutions);
+	evaporate_pheromone();
+
+	std::vector<size_t> best_solution = solutions[0];
+	float best_solution_length = blast::get_length_of_path(*node_graph, best_solution, true).value_or(std::numeric_limits<float>::max());
+
+	for (size_t i = 1; i < solutions.size(); i++)
+	{
+		float solution_length = blast::get_length_of_path(*node_graph, solutions[i], true).value_or(std::numeric_limits<float>::max());
+
+		if (solution_length < best_solution_length)
+		{
+			best_solution = solutions[i];
+			best_solution_length = solution_length;
+		}
+	}
+
+	return { 0, best_solution, *pheromone_graph };
+}
+
+
+
+std::vector<size_t> blast::Ant_colony_optimizer::execute_iterations(size_t iteration_count)
+{
 	std::vector<std::vector<size_t>> solutions;
 
 	for (int i = 0; i < iteration_count; i++)
 	{
-		// Do we have to check if the solution is better than the current best solution?
-		// Or can we just assume that the solution is better?
-		solutions = construct_solution(pheromone_graph, node_graph);
-		global_pheromone_update(node_graph, pheromone_graph, solutions);
-		evaporate_pheromone(pheromone_graph);
+		execute_iteration();
 	}
 
-	return solutions[0];
+	return best_overall_solution;
 }
 
-std::vector<std::vector<size_t>> blast::Ant_colony_optimizer::construct_solution(
-	const blast::Graph& pheromone_graph, const blast::Graph& node_graph) const
+void blast::Ant_colony_optimizer::initialize()
 {
-	size_t node_count = node_graph.get_node_count();
+	// ensure_complete_graph(node_graph);
+}
+
+
+std::vector<std::vector<size_t>> blast::Ant_colony_optimizer::construct_solutions() const
+{
+	size_t node_count = node_graph->get_node_count();
 
 	std::vector<std::vector<size_t>> solutions;
 	float best_solution_const = std::numeric_limits<float>::max();
 
+	// TODO: This is probably parallelizable
 	for (int i = 0; i < ant_count; i++)
 	{
 		std::unordered_set<size_t> visited;
@@ -38,7 +92,7 @@ std::vector<std::vector<size_t>> blast::Ant_colony_optimizer::construct_solution
 
 		solution.reserve(node_count);
 
-		// Pick first node randomly
+		// Pick first node completely - and independently - randomly
 		unsigned int seed = std::chrono::system_clock::now().time_since_epoch().count();
 
 		size_t first_node = 0;
@@ -50,13 +104,11 @@ std::vector<std::vector<size_t>> blast::Ant_colony_optimizer::construct_solution
 			visited.insert(first_node);
 		}
 
-
 		for (size_t j = 0; j < node_count; j++)
 		{
-			// Pick next node randomly
-			// TODO: Select random node more intelligently
-			// TODO: Use the actual pheromone values
-			auto connected_nodes = pheromone_graph.get_connected_nodes(solution.back());
+			// Find all nodes that are connected to the last node in the solution
+			auto connected_nodes = pheromone_graph->get_connected_nodes(solution.back());
+			// Filter out those that have already been visited
 			for (auto it = connected_nodes.begin(); it != connected_nodes.end();)
 			{
 				if (visited.contains(it->second))
@@ -69,13 +121,28 @@ std::vector<std::vector<size_t>> blast::Ant_colony_optimizer::construct_solution
 				}
 			}
 
+			// Find the pheromone levels of the considered nodes
 			std::vector<float> pheromone_levels;
 			for (const auto& node : connected_nodes)
 			{
-				if (visited.contains(node.second))
-				{
-					pheromone_levels.push_back(node.first);
-				}
+				pheromone_levels.push_back(node.first);
+			}
+
+			std::vector<float> actual_distances;
+			actual_distances.reserve(connected_nodes.size());
+			for (const auto& node : connected_nodes)
+			{
+				actual_distances.push_back(node_graph->get_edge_weight(solution.back(), node.second).value_or(std::numeric_limits<float>::max()));
+			}
+
+			std::vector<float> probabilities;
+			probabilities.reserve(connected_nodes.size());
+			for (size_t k = 0; k < connected_nodes.size(); k++)
+			{
+				float pheromone = pheromone_levels[k];
+				float distance = actual_distances[k];
+				float probability = pow(pheromone, alpha) * pow(1 / distance, beta);
+				probabilities.push_back(probability);
 			}
 
 			std::discrete_distribution<int> distribution{ pheromone_levels.begin(), pheromone_levels.end() };
@@ -101,11 +168,11 @@ std::vector<std::vector<size_t>> blast::Ant_colony_optimizer::construct_solution
 	return solutions;
 }
 
-void blast::Ant_colony_optimizer::global_pheromone_update(const blast::Graph& node_graph, blast::Graph& pheromone_graph, const std::vector<std::vector<size_t>>& taken_paths)
+void blast::Ant_colony_optimizer::global_pheromone_update(const std::vector<std::vector<size_t>>& taken_paths)
 {
 	for (const auto& path : taken_paths)
 	{
-		float path_length = *blast::get_length_of_path(node_graph, path, true);
+		float path_length = blast::get_length_of_path(*node_graph, path, true).value_or(std::numeric_limits<float>::max());
 		float pheromone_per_edge = 20.0f / path_length;
 
 		for (size_t i = 0; i < path.size() - 1; i++)
@@ -113,27 +180,28 @@ void blast::Ant_colony_optimizer::global_pheromone_update(const blast::Graph& no
 			size_t from = path[i];
 			size_t to = path[i + 1];
 
-			float edge_weight = *pheromone_graph.get_edge_weight(from, to);
+			float edge_weight = *pheromone_graph->get_edge_weight(from, to);
 			edge_weight += pheromone_per_edge;
 
-			pheromone_graph.add_or_update_directed_edge(from, to, edge_weight);
+			pheromone_graph->add_or_update_directed_edge(from, to, edge_weight);
 		}
 	}
 }
 
-void blast::Ant_colony_optimizer::evaporate_pheromone(blast::Graph& pheromone_graph)
+void blast::Ant_colony_optimizer::evaporate_pheromone()
 {
-	for (size_t i = 0; i < pheromone_graph.get_node_count(); i++)
+	for (size_t i = 0; i < pheromone_graph->get_node_count(); i++)
 	{
-		for (size_t j = 0; j < pheromone_graph.get_node_count(); j++)
+		for (size_t j = 0; j < pheromone_graph->get_node_count(); j++)
 		{
-			if (auto edge_weight = pheromone_graph.get_edge_weight(i, j); edge_weight.has_value()) // pheromone_graph.exists_edge(i, j);
+			if (i != j)
 			{
-				float edge_weight_val = *edge_weight;
+				auto edge_weight = *pheromone_graph->get_edge_weight(i, j); // pheromone_graph.exists_edge(i, j);
+
 				// Evaporate pheromone
-				edge_weight_val *= 0.9;
+				edge_weight *= (1.0f - evaporation_rate);
 				// Recreate edge with new pheromone amount
-				pheromone_graph.add_or_update_directed_edge(i, j, edge_weight_val);
+				pheromone_graph->add_or_update_directed_edge(i, j, edge_weight);
 			}
 		}
 	}

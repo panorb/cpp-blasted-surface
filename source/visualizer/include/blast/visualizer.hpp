@@ -4,13 +4,15 @@
 #include <blast/node.hpp>
 #include <blast/graph.hpp>
 
+#include "blast/ant_colony_optimizer.hpp"
+
 namespace blast {
 	class Visual_node : public Node {
 	public:
 		Vector2 render_position{};
 		Color render_color{};
 
-		Visual_node(std::string label) : Node(label) {};
+		explicit Visual_node(std::string label) : Node(label) {};
 		Visual_node(std::string label, Vector2 position, Color color) : render_position(position), render_color(color), Node(label) {};
 		void draw();
 	};
@@ -49,6 +51,17 @@ namespace blast {
 		void update(Visualizer& visualizer) override;
 	};
 
+	class Run_aco_state final : public Visualizer_state {
+		std::unique_ptr<Ant_colony_optimizer> aco;
+		const float TIME_PER_STEP = 3.0f;
+		float time_delta = 0.0f;
+	public:
+		Run_aco_state() = delete;
+		explicit Run_aco_state(std::unique_ptr<Ant_colony_optimizer> aco): aco(std::move(aco)) {}
+		std::string name() override { return "Run ACO"; };
+		void update(Visualizer& visualizer) override;
+	};
+
 	class Visualizer {
 		std::unique_ptr<Visualizer_state> active_state = std::make_unique<Add_node_state>();
 
@@ -66,6 +79,6 @@ namespace blast {
 		void update();
 		void render();
 		int get_hovered_node_index(Vector2 cursor_pos);
-		inline std::shared_ptr<Visual_node> get_node(int index);
+		inline std::shared_ptr<Visual_node> get_node(size_t index) const;
 	};
 }; // namespace blast

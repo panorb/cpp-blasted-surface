@@ -8,6 +8,5 @@ namespace blast
 	{
 	public:
 		virtual ~Optimizer_strategy() = default;
-		virtual std::vector<size_t> execute(const blast::Graph& node_graph) = 0;
 	};
 }
