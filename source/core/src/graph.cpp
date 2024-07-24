@@ -156,7 +156,7 @@ std::optional<float> blast::get_length_of_path(const Graph& graph, const std::ve
 {
 	float length = 0.f;
 
-	if (path.size() <= 1) return 0.f;
+	if (path.size() <= 1) return {};
 
 	for (size_t i = 0; i < path.size() - 1; i++) {
 		const auto edge_weight = graph.get_edge_weight(path[i], path[i + 1]);

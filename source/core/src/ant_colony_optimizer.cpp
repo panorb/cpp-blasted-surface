@@ -20,7 +20,7 @@ void ensure_complete_graph(const blast::Graph& graph)
 }
 
 blast::Ant_colony_optimizer::Ant_colony_optimizer(const Graph* node_graph, const int ant_count,
-	const int iteration_count, const float evaporation_rate, const float alpha, const float beta) : node_graph(node_graph), ant_count(ant_count), evaporation_rate(evaporation_rate), alpha(alpha), beta(beta)
+	const int iteration_count, const float evaporation_rate, const float alpha, const float beta, const float pheromone_constant) : node_graph(node_graph), ant_count(ant_count), evaporation_rate(evaporation_rate), alpha(alpha), beta(beta), pheromone_constant(pheromone_constant)
 {
 	pheromone_graph = std::make_unique<Graph>(*node_graph); // This copy of the graph will store the pheromone values
 
@@ -29,7 +29,7 @@ blast::Ant_colony_optimizer::Ant_colony_optimizer(const Graph* node_graph, const
 	{
 		for (size_t j = 0; j < pheromone_graph->get_node_count(); j++)
 		{
-			pheromone_graph->add_or_update_directed_edge(i, j, 1.0f);
+			pheromone_graph->add_or_update_directed_edge(i, j, 1.f);
 		}
 	}
 }
@@ -40,21 +40,26 @@ blast::Ant_colony_optimizer_iteration_result blast::Ant_colony_optimizer::execut
 	global_pheromone_update(solutions);
 	evaporate_pheromone();
 
-	std::vector<size_t> best_solution = solutions[0];
-	float best_solution_length = blast::get_length_of_path(*node_graph, best_solution, true).value_or(std::numeric_limits<float>::max());
+	std::vector<size_t> best_solution_this_iteration = solutions[0];
+	float best_solution_this_iteration_length = blast::get_length_of_path(*node_graph, best_solution_this_iteration, true).value_or(std::numeric_limits<float>::max());
 
-	for (size_t i = 1; i < solutions.size(); i++)
+	for (size_t i = 0; i < solutions.size(); i++)
 	{
 		float solution_length = blast::get_length_of_path(*node_graph, solutions[i], true).value_or(std::numeric_limits<float>::max());
 
-		if (solution_length < best_solution_length)
+		if (solution_length < best_solution_this_iteration_length)
 		{
-			best_solution = solutions[i];
-			best_solution_length = solution_length;
+			best_solution_this_iteration = solutions[i];
+			best_solution_this_iteration_length = solution_length;
 		}
 	}
 
-	return { 0, best_solution, *pheromone_graph };
+	if (best_solution_this_iteration_length < blast::get_length_of_path(*node_graph, best_overall_solution, true).value_or(std::numeric_limits<float>::max()))
+	{
+		best_overall_solution = best_solution_this_iteration;
+	}
+
+	return { 0, best_solution_this_iteration, best_overall_solution, *pheromone_graph };
 }
 
 
@@ -84,6 +89,12 @@ std::vector<std::vector<size_t>> blast::Ant_colony_optimizer::construct_solution
 	std::vector<std::vector<size_t>> solutions;
 	float best_solution_const = std::numeric_limits<float>::max();
 
+	std::unordered_set<size_t> used_starts;
+	if (used_starts.size() == node_count)
+	{
+		used_starts.clear();
+	}
+
 	// TODO: This is probably parallelizable
 	for (int i = 0; i < ant_count; i++)
 	{
@@ -98,13 +109,17 @@ std::vector<std::vector<size_t>> blast::Ant_colony_optimizer::construct_solution
 		size_t first_node = 0;
 		std::mt19937 generator(seed); // Standard mersenne_twister_engine seeded with rd()
 		{
-			std::uniform_int_distribution<size_t> distribution(0, node_count - 1);
-			first_node = distribution(generator);
+			do {
+				std::uniform_int_distribution<size_t> distribution(0, node_count - 1);
+				first_node = distribution(generator);
+			} while (used_starts.contains(first_node));
+
 			solution.push_back(first_node);
 			visited.insert(first_node);
+			used_starts.insert(first_node);
 		}
 
-		for (size_t j = 0; j < node_count; j++)
+		for (size_t j = 1; j < node_count; j++)
 		{
 			// Find all nodes that are connected to the last node in the solution
 			auto connected_nodes = pheromone_graph->get_connected_nodes(solution.back());
@@ -141,7 +156,7 @@ std::vector<std::vector<size_t>> blast::Ant_colony_optimizer::construct_solution
 			{
 				float pheromone = pheromone_levels[k];
 				float distance = actual_distances[k];
-				float probability = pow(pheromone, alpha) * pow(1 / distance, beta);
+				float probability = pow(pheromone, alpha) * pow(1.f / distance, beta);
 				probabilities.push_back(probability);
 			}
 
@@ -149,15 +164,6 @@ std::vector<std::vector<size_t>> blast::Ant_colony_optimizer::construct_solution
 
 			int res = distribution(generator);
 
-			if (res == 0 && res >= connected_nodes.size())
-			{
-				j = 0;
-				solution.clear();
-				visited.clear();
-				solution.push_back(first_node);
-				visited.insert(first_node);
-				continue;
-			}
 			solution.push_back(connected_nodes[res].second);
 			visited.insert(connected_nodes[res].second);
 		}
@@ -173,7 +179,7 @@ void blast::Ant_colony_optimizer::global_pheromone_update(const std::vector<std:
 	for (const auto& path : taken_paths)
 	{
 		float path_length = blast::get_length_of_path(*node_graph, path, true).value_or(std::numeric_limits<float>::max());
-		float pheromone_per_edge = 20.0f / path_length;
+		float pheromone_per_edge = pheromone_constant / path_length;
 
 		for (size_t i = 0; i < path.size() - 1; i++)
 		{
@@ -183,8 +189,13 @@ void blast::Ant_colony_optimizer::global_pheromone_update(const std::vector<std:
 			float edge_weight = *pheromone_graph->get_edge_weight(from, to);
 			edge_weight += pheromone_per_edge;
 
-			pheromone_graph->add_or_update_directed_edge(from, to, edge_weight);
+			pheromone_graph->add_or_update_undirected_edge(from, to, edge_weight);
 		}
+
+		float edge_weight = *pheromone_graph->get_edge_weight(path[path.size() - 1], path[0]);
+		edge_weight += pheromone_per_edge;
+
+		pheromone_graph->add_or_update_undirected_edge(path[path.size() - 1], path[0], edge_weight);
 	}
 }
 
@@ -199,7 +210,7 @@ void blast::Ant_colony_optimizer::evaporate_pheromone()
 				auto edge_weight = *pheromone_graph->get_edge_weight(i, j); // pheromone_graph.exists_edge(i, j);
 
 				// Evaporate pheromone
-				edge_weight *= (1.0f - evaporation_rate);
+				edge_weight *= evaporation_rate;
 				// Recreate edge with new pheromone amount
 				pheromone_graph->add_or_update_directed_edge(i, j, edge_weight);
 			}

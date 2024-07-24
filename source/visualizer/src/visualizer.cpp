@@ -1,5 +1,6 @@
 #include <blast/visualizer.hpp>
 #include <spdlog/spdlog.h>
+#include <xlocale>
 
 void blast::Visual_node::draw()
 {
@@ -29,8 +30,43 @@ void blast::Visualizer::initialize_window()
 	SetTargetFPS(60);
 }
 
+void blast::Visualizer::generate_default_graph() {
+	Vector2 reference_size{878.f, 600.f};
+	Vector2 screen_size{static_cast<float>(GetScreenWidth()), static_cast<float>(GetScreenHeight())};
+
+	std::vector<Vector2> positions{
+		Vector2{274.f, 238.f},
+		Vector2{678.f, 263.f},
+		Vector2{213.f, 271.f},
+		Vector2{624.f, 248.f},
+		Vector2{756.f, 487.f},
+		Vector2{631.f, 545.f},
+		Vector2{227.f, 333.f},
+		Vector2{43.f, 388.f},
+		Vector2{349.f, 37.f},
+		Vector2{132.f, 227.f}
+	};
+
+	for (int i = 0; i < positions.size(); i++) {
+		Vector2 screen_position = Vector2Multiply(Vector2Divide(positions[i], reference_size), screen_size);
+
+		std::shared_ptr<Visual_node> node = std::make_shared<Visual_node>("Node " + std::to_string(graph->get_node_count()), screen_position, default_node_color);
+		graph->add_node(node);
+	}
+
+	for (int i = 0; i < positions.size(); i++) {
+		for (int j = 0; j < positions.size(); j++) {
+			if (i < j)
+			{
+				graph->add_undirected_edge(i, j, Vector2Distance(positions[i], positions[j]));
+			}
+		}
+	}
+}
+
 void blast::Visualizer::main_loop()
 {
+	generate_default_graph();
 	while (!WindowShouldClose()) {
 		update();
 		ClearBackground(RAYWHITE);
@@ -53,7 +89,7 @@ void blast::Visualizer::update()
 		change_state(std::make_unique<Move_state>());
 	}
 	else if (IsKeyPressed(KEY_A)) {
-		change_state(std::make_unique<Run_aco_state>(std::make_unique<Ant_colony_optimizer>(graph.get(), 1, 100)));
+		change_state(std::make_unique<Run_aco_state>(std::make_unique<Ant_colony_optimizer>(graph.get(), 8, 100)));
 	}
 
 	active_state->update(*this);
@@ -74,7 +110,7 @@ void blast::Visualizer::render()
 		for (int i = 0; i < graph->get_node_count(); i++) {
 			for (int j = 0; j < graph->get_node_count(); j++) {
 				if (i < j && graph->exists_edge(i, j)) {
-					DrawLineEx(get_node(i)->render_position, get_node(j)->render_position, 3.0, BLACK);
+					DrawLineEx(get_node(i)->render_position, get_node(j)->render_position, 1.0, BLACK);
 					Vector2 direction = { get_node(j)->render_position.x - get_node(i)->render_position.x, get_node(j)->render_position.y - get_node(i)->render_position.y };
 					direction = Vector2Normalize(direction);
 					Vector2 perpendicular = PerpendicularCounterClockwise(direction);
@@ -202,7 +238,7 @@ void blast::Run_aco_state::update(Visualizer& visualizer)
 	{
 		spdlog::info("Step");
 		time_delta = 0.0f;
-		aco->execute_iteration();
+		last_result = aco->execute_iteration();
 	}
 }
 
@@ -213,10 +249,27 @@ void blast::Run_aco_state::draw(Visualizer& visualizer)
 	for (int i = 0; i < graph->get_node_count(); i++) {
 		for (int j = 0; j < graph->get_node_count(); j++) {
 			if (i < j && last_result.pheromone_graph.exists_edge(i, j)) {
-				DrawLineEx(visualizer.get_node(i)->render_position, visualizer.get_node(j)->render_position, powf((*last_result.pheromone_graph.get_edge_weight(i, j)), 5.0f) * 5.f, RED);
+				DrawLineEx(visualizer.get_node(i)->render_position, visualizer.get_node(j)->render_position, 2.0f, ColorAlpha(RED, *last_result.pheromone_graph.get_edge_weight(i, j)));
 			}
 		}
 	}
+
+	// current iteration
+	//auto best_solution_this_iteration = last_result.best_solution_this_iteration;
+	//for (size_t i = 1; i < best_solution_this_iteration.size(); i++)
+	//{
+	//	DrawLineEx(visualizer.get_node(best_solution_this_iteration[i - 1])->render_position, visualizer.get_node(best_solution_this_iteration[i])->render_position, 2.0, DARKGREEN);
+	//}
+	//DrawLineEx(visualizer.get_node(best_solution_this_iteration.back())->render_position, visualizer.get_node(best_solution_this_iteration.front())->render_position, 2.0, DARKGREEN);
+	//DrawLineEx(
+
+	auto best_solution_overall = last_result.best_solution_overall;
+	for (size_t i = 1; i < best_solution_overall.size(); i++)
+	{
+		DrawLineEx(visualizer.get_node(best_solution_overall[i - 1])->render_position, visualizer.get_node(best_solution_overall[i])->render_position, 2.0, GREEN);
+	}
+	DrawLineEx(visualizer.get_node(best_solution_overall.back())->render_position, visualizer.get_node(best_solution_overall.front())->render_position, 2.0, GREEN);
+
 }
 
 void blast::Run_aco_state::exit(Visualizer& visualizer)
