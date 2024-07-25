@@ -5,6 +5,9 @@
 #include <stdexcept>
 #include <vector>
 #include <vulkan/vulkan_core.h>
+#include <vma/vk_mem_alloc.h>
+
+#include "vk_types.hpp"
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(
 	VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
@@ -16,6 +19,24 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(
 	}
 
 	return VK_FALSE;
+}
+
+void create_buffer(size_t alloc_size, VkBufferUsageFlags usage, VmaMemoryUsage memory_usage)
+{
+	// allocate buffer
+	VkBufferCreateInfo buffer_info = {.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
+	buffer_info.pNext = nullptr;
+	buffer_info.size = alloc_size;
+
+	buffer_info.usage = usage;
+
+	VmaAllocationCreateInfo vma_alloc_info = {};
+	vma_alloc_info.usage = memory_usage;
+	vma_alloc_info.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT;
+	Allocated_buffer new_buffer;
+
+	VK_CHECK(vmaCreateBuffer(_allocator, &buffer_info, &malloc_info, &new_buffer.buffer, &new_buffer.allocation,
+		&new_buffer.info));
 }
 
 

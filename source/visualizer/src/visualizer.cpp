@@ -30,22 +30,9 @@ void blast::Visualizer::initialize_window()
 	SetTargetFPS(60);
 }
 
-void blast::Visualizer::generate_default_graph() {
+void blast::Visualizer::generate_graph_from_reference_coords(std::vector<Vector2>& positions) {
 	Vector2 reference_size{878.f, 600.f};
 	Vector2 screen_size{static_cast<float>(GetScreenWidth()), static_cast<float>(GetScreenHeight())};
-
-	std::vector<Vector2> positions{
-		Vector2{274.f, 238.f},
-		Vector2{678.f, 263.f},
-		Vector2{213.f, 271.f},
-		Vector2{624.f, 248.f},
-		Vector2{756.f, 487.f},
-		Vector2{631.f, 545.f},
-		Vector2{227.f, 333.f},
-		Vector2{43.f, 388.f},
-		Vector2{349.f, 37.f},
-		Vector2{132.f, 227.f}
-	};
 
 	for (int i = 0; i < positions.size(); i++) {
 		Vector2 screen_position = Vector2Multiply(Vector2Divide(positions[i], reference_size), screen_size);
@@ -64,9 +51,119 @@ void blast::Visualizer::generate_default_graph() {
 	}
 }
 
+void blast::Visualizer::load_example_graph(size_t num)
+{
+	std::vector<Vector2> positions;
+
+	switch (num)
+	{
+		case KEY_ONE:
+			positions = {
+				Vector2{ 274.f, 238.f },
+				Vector2{ 678.f, 263.f },
+				Vector2{ 213.f, 271.f },
+				Vector2{ 624.f, 248.f },
+				Vector2{ 756.f, 487.f },
+				Vector2{ 631.f, 545.f },
+				Vector2{ 227.f, 333.f },
+				Vector2{ 43.f, 388.f },
+				Vector2{ 349.f, 37.f },
+				Vector2{ 132.f, 227.f }
+			};
+			break;
+	case KEY_TWO:
+		positions = {
+				Vector2{818.f,244.f},
+				Vector2{619.f,187.f},
+				Vector2{802.f,333.f},
+				Vector2{187.f,397.f},
+				Vector2{345.f,228.f},
+				Vector2{657.f,130.f},
+				Vector2{724.f,578.f},
+				Vector2{639.f,449.f},
+				Vector2{315.f,300.f},
+				Vector2{603.f,458.f},
+				Vector2{379.f,594.f},
+				Vector2{519.f,443.f},
+				Vector2{625.f,103.f},
+				Vector2{248.f,249.f},
+				Vector2{286.f,386.f},
+				Vector2{705.f,23.f},
+				Vector2{119.f,186.f},
+				Vector2{85.f,184.f},
+				Vector2{114.f,331.f},
+				Vector2{501.f,24.f},
+				Vector2{522.f,10.f},
+				Vector2{373.f,60.f},
+				Vector2{348.f,362.f},
+				Vector2{372.f,332.f},
+				Vector2{145.f,124.f},
+				Vector2{150.f,156.f},
+				Vector2{668.f,383.f},
+				Vector2{125.f,290.f},
+				Vector2{327.f,390.f},
+				Vector2{634.f,107.f},
+				Vector2{285.f,314.f},
+				Vector2{563.f,408.f},
+				Vector2{19.f,391.f},
+				Vector2{498.f,357.f},
+				Vector2{731.f,211.f},
+				Vector2{572.f,415.f},
+				Vector2{780.f,488.f},
+				Vector2{632.f,85.f},
+				Vector2{85.f,482.f},
+				Vector2{847.f,574.f},
+				Vector2{344.f,179.f},
+				Vector2{318.f,96.f},
+				Vector2{694.f,581.f},
+				Vector2{602.f,190.f},
+				Vector2{101.f,273.f},
+				Vector2{44.f,336.f},
+				Vector2{340.f,23.f},
+				Vector2{329.f,459.f},
+				Vector2{504.f,194.f},
+				Vector2{332.f,71.f},
+				Vector2{423.f,443.f},
+				Vector2{282.f,453.f},
+				Vector2{118.f,444.f},
+				Vector2{29.f,417.f},
+				Vector2{829.f,276.f},
+				Vector2{388.f,40.f},
+				Vector2{726.f,429.f},
+				Vector2{45.f,204.f},
+				Vector2{185.f,584.f},
+				Vector2{260.f,386.f},
+				Vector2{685.f,50.f},
+				Vector2{288.f,245.f},
+				Vector2{751.f,331.f},
+				Vector2{173.f,8.f},
+				Vector2{647.f,204.f},
+				Vector2{277.f,236.f},
+				Vector2{864.f,488.f},
+				Vector2{840.f,561.f},
+				Vector2{229.f,584.f},
+				Vector2{58.f,189.f},
+				Vector2{426.f,433.f},
+				Vector2{819.f,312.f},
+				Vector2{109.f,452.f},
+				Vector2{228.f,380.f},
+				Vector2{456.f,97.f},
+				Vector2{611.f,184.f},
+				Vector2{721.f,582.f},
+				Vector2{377.f,354.f},
+				Vector2{528.f,296.f},
+				Vector2{203.f,517.f}
+		};
+
+	}
+
+	graph->clear();
+	generate_graph_from_reference_coords(positions);
+}
+
 void blast::Visualizer::main_loop()
 {
-	generate_default_graph();
+	//generate_graph_from_reference_coords(TODO);
 	while (!WindowShouldClose()) {
 		update();
 		ClearBackground(RAYWHITE);
@@ -89,7 +186,24 @@ void blast::Visualizer::update()
 		change_state(std::make_unique<Move_state>());
 	}
 	else if (IsKeyPressed(KEY_A)) {
-		change_state(std::make_unique<Run_aco_state>(std::make_unique<Ant_colony_optimizer>(graph.get(), 8, 100)));
+		change_state(std::make_unique<Run_aco_state>(std::make_unique<Ant_colony_optimizer>(graph.get(), 70, 100)));
+	}
+
+	std::vector<int> num_keys = { KEY_ONE, KEY_TWO, KEY_THREE, KEY_FOUR, KEY_FIVE, KEY_SIX, KEY_SEVEN, KEY_EIGHT, KEY_NINE, KEY_ZERO };
+	int pressed_key = -1;
+
+	for (int num_key : num_keys)
+	{
+		if (IsKeyPressed(num_key))
+		{
+			pressed_key = num_key;
+			break;
+		}
+	}
+
+	if (pressed_key >= 0)
+	{
+		load_example_graph(pressed_key);
 	}
 
 	active_state->update(*this);

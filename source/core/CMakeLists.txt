@@ -1,4 +1,4 @@
-add_library(Core include/blast/graph.hpp src/graph.cpp include/blast/node.hpp src/node.cpp include/blast/point_cloud.hpp src/point_cloud.cpp include/blast/optimizer_strategy.hpp include/blast/ant_colony_optimizer.hpp src/ant_colony_optimizer.cpp)
+add_library(Core include/blast/graph.hpp src/graph.cpp include/blast/node.hpp src/node.cpp include/blast/point_cloud.hpp src/point_cloud.cpp include/blast/optimizer_strategy.hpp include/blast/ant_colony_optimizer.hpp src/ant_colony_optimizer.cpp include/blast/triangulation.hpp src/triangulation.cpp)
 target_include_directories(Core PUBLIC include)
 target_link_libraries(Core PUBLIC glm::glm spdlog::spdlog)
 target_link_libraries(Core PRIVATE ${PCL_LIBRARIES})

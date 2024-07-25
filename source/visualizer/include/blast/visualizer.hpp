@@ -54,7 +54,7 @@ namespace blast {
 	class Run_aco_state final : public Visualizer_state {
 		std::unique_ptr<Ant_colony_optimizer> aco;
 		Ant_colony_optimizer_iteration_result last_result;
-		const float TIME_PER_STEP = 0.2f;
+		const float TIME_PER_STEP = 0.02f;
 		float time_delta = 0.0f;
 	public:
 		Run_aco_state() = delete;
@@ -81,7 +81,8 @@ namespace blast {
 		std::shared_ptr<blast::Graph> graph;
 		void change_state(std::unique_ptr<Visualizer_state> state);
 		void initialize_window();
-		void generate_default_graph();
+		void generate_graph_from_reference_coords(std::vector<Vector2>& positions);
+		void load_example_graph(size_t num);
 		void main_loop();
 		void update();
 		void render();

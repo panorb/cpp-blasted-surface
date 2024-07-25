@@ -7,7 +7,8 @@
 		"glfw3",
 		"glm",
 		"pcl",
-		"spdlog"
+		"spdlog",
+		"vulkan-memory-allocator"
   ]
 }
 
