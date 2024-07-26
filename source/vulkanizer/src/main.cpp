@@ -1,15 +1,14 @@
-#include <vk_renderer.hpp>
+#include <vk_engine.hpp>
 
-#include <spdlog/cfg/env.h>
+int main(int argc, char* argv[])
+{
+	VulkanEngine engine;
 
-int main() {
-	spdlog::cfg::load_env_levels();
-
-	Vulkan_renderer* renderer = Vulkan_renderer::get_instance();
+	engine.init();	
 	
-	// renderer->init();
-	renderer->main_loop();
-	// renderer->cleanup();
+	engine.run();	
+
+	engine.cleanup();	
 
 	return 0;
 }

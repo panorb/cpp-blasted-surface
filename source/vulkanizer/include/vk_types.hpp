@@ -1,11 +1,28 @@
 #pragma once
 
-#include <vk_mem_alloc.h>
-#include <vulkan/vulkan_core.h>
+#include <memory>
+#include <optional>
+#include <string>
+#include <vector>
+#include <span>
+#include <array>
+#include <functional>
+#include <deque>
 
-struct Allocated_buffer
-{
-	VkBuffer buffer;
-	VmaAllocation allocation;
-	VmaAllocationInfo info;
-};
+#include <vulkan/vulkan.h>
+#include <vulkan/vk_enum_string_helper.h>
+#include <vk_mem_alloc.h>
+
+#include <fmt/core.h>
+
+#include <glm/mat4x4.hpp>
+#include <glm/vec4.hpp>
+
+#define VK_CHECK(x)                                                     \
+    do {                                                                \
+        VkResult err = x;                                               \
+        if (err) {                                                      \
+             fmt::print("Detected Vulkan error: {}", string_VkResult(err)); \
+            abort();                                                    \
+        }                                                               \
+    } while (0)
