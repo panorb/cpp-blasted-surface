@@ -26,3 +26,30 @@
             abort();                                                    \
         }                                                               \
     } while (0)
+
+struct DeletionQueue
+{
+	std::deque<std::function<void()>> deletors;
+
+	void push_function(std::function<void()> &&function)
+	{
+		deletors.push_back(std::move(function));
+	}
+
+	void flush()
+	{
+		for (auto it = deletors.rbegin(); it != deletors.rend(); it++)
+		{
+			(*it)();
+		}
+		deletors.clear();
+	}
+};
+
+struct AllocatedImage {
+	VkImage image;
+	VkImageView imageView;
+	VmaAllocation allocation;
+	VkExtent3D imageExtent;
+	VkFormat imageFormat;
+};
