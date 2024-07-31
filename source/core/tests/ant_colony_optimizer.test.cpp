@@ -24,8 +24,8 @@ TEST_CASE("The Ant colony optimizer...", "[aco]")
 		};
 		blast::add_edges_from_adjacency_matrix(graph, edges);
 
-		blast::Ant_colony_optimizer aco{ 5,1 };
-		REQUIRE_THROWS_WITH(aco.execute(graph), "Graph is not complete");
+		blast::Ant_colony_optimizer aco{ &graph, 5,1 };
+		REQUIRE_THROWS_WITH(aco.execute_iterations(100), "Graph is not complete");
 	}
 
 	SECTION("...succeeds if the graph is complete")
@@ -39,8 +39,8 @@ TEST_CASE("The Ant colony optimizer...", "[aco]")
 		};
 		blast::add_edges_from_adjacency_matrix(graph, edges);
 
-		blast::Ant_colony_optimizer aco{ 5,1 };
-		REQUIRE_NOTHROW(aco.execute(graph));
+		blast::Ant_colony_optimizer aco{ &graph, 5,1 };
+		REQUIRE_NOTHROW(aco.execute_iterations(100));
 	
 	}
 

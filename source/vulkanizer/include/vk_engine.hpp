@@ -25,7 +25,7 @@ public:
 	DescriptorAllocator globalDescriptorAllocator;
 
 	VkDescriptorSet _drawImageDescriptors;
-	VkDescriptorSetLayout _drawImageDescriptorSetLayout;
+	VkDescriptorSetLayout _drawImageDescriptorLayout;
 
 	FrameData _frames[FRAME_OVERLAP];
 	FrameData& get_current_frame();
