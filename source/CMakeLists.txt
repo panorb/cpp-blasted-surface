@@ -5,12 +5,14 @@ set(CMAKE_CXX_STANDARD 20)
 
 find_package(raylib CONFIG REQUIRED)
 find_package(Catch2 3 CONFIG REQUIRED)
-find_package(Vulkan REQUIRED)
-find_package(VulkanMemoryAllocator CONFIG REQUIRED)
-find_package(glfw3 CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
 find_package(PCL REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
+
+find_package(OpenGL REQUIRED)
+find_package(glfw3 CONFIG REQUIRED)
+find_package(GLEW CONFIG REQUIRED)
+find_package(Eigen3 CONFIG REQUIRED)
 find_package(imgui CONFIG REQUIRED)
 
 include_directories(${PCL_INCLUDE_DIRS})

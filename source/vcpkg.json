@@ -5,13 +5,14 @@
     "raylib",
     "catch2",
 		"glfw3",
+		"glew",
 		"glm",
 		"pcl",
 		"spdlog",
-		"vulkan-memory-allocator",
+		"eigen3",
 		{
 			"name": "imgui",
-			"features": ["glfw-binding", "vulkan-binding"]
+			"features": ["glfw-binding", "opengl3-binding"]
 		}
   ]
 }

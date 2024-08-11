@@ -2,7 +2,7 @@
 
 #include <iostream>
 #include <GL/glew.h>
-#include "stb_image.h"
+#include <stb/stb_image.h>
 #include "meshview/util.hpp"
 #include "meshview/internal/assert.hpp"
 

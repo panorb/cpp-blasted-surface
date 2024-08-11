@@ -6,9 +6,9 @@
 
 #ifdef MESHVIEW_IMGUI
 #define IMGUI_IMPL_OPENGL_LOADER_GLEW
-#include "meshview/imgui/imgui_impl_opengl3.h"
-#include "meshview/imgui/imgui_impl_glfw.h"
-#include "meshview/imgui/imgui_stdlib.h"
+#include <imgui_impl_opengl3.h>
+#include <imgui_impl_glfw.h>
+#include <imgui_stdlib.h>
 #endif
 
 #endif  // ifndef MESHVIEW_IMGUI_FA8950B7_4B5D_4B58_A95A_46172CD48B21
