@@ -1,6 +1,6 @@
-add_library(Core include/blast/graph.hpp src/graph.cpp include/blast/node.hpp src/node.cpp include/blast/point_cloud.hpp src/point_cloud.cpp include/blast/optimizer_strategy.hpp include/blast/ant_colony_optimizer.hpp src/ant_colony_optimizer.cpp include/blast/triangulation.hpp src/triangulation.cpp)
+add_library(Core include/blast/graph.hpp src/graph.cpp include/blast/node.hpp src/node.cpp include/blast/point_cloud.hpp src/point_cloud.cpp include/blast/optimizer_strategy.hpp include/blast/ant_colony_optimizer.hpp src/ant_colony_optimizer.cpp include/blast/triangulation.hpp src/triangulation.cpp include/blast/voxel_grid.hpp src/voxel_grid.cpp include/blast/utility.hpp)
 target_include_directories(Core PUBLIC include)
-target_link_libraries(Core PUBLIC glm::glm spdlog::spdlog)
+target_link_libraries(Core PUBLIC spdlog::spdlog Eigen3::Eigen)
 target_link_libraries(Core PRIVATE ${PCL_LIBRARIES})
 
 add_executable(CoreTest tests/graph.test.cpp tests/point_cloud.test.cpp tests/ant_colony_optimizer.test.cpp tests/setup.cpp)

@@ -2,7 +2,7 @@
 #include <catch.hpp>
 
 TEST_CASE("Point clouds can be created from point list", "[point_cloud]") {
-	std::vector<glm::vec3> points = {{-1.f, 0.f, 1.f}, {1.f, -1.f, 0.f}, {0.f, 1.f, -1.f}};
+	std::vector<Eigen::Vector3d> points = {{-1.f, 0.f, 1.f}, {1.f, -1.f, 0.f}, {0.f, 1.f, -1.f}};
 	const blast::Point_cloud point_cloud{points};
 	REQUIRE(point_cloud.get_points().size() == points.size());
 	REQUIRE(point_cloud.get_points()[0] == points[0]);
