@@ -162,4 +162,29 @@ std::vector<Eigen::Vector3d> blast::Point_cloud::estimate_normals(float radius)
 	return normals_vec;
 }
 
+Eigen::Vector3d blast::Point_cloud::compute_min_bound() const
+{
+	if (points.empty()) {
+		return Eigen::Vector3d(0.0, 0.0, 0.0);
+	}
+	return std::accumulate(
+		points.begin(), points.end(), points[0],
+		[](const Eigen::Vector3d& a, const Eigen::Vector3d& b) {
+			return a.array().min(b.array()).matrix();
+		});
+}
+
+Eigen::Vector3d blast::Point_cloud::compute_max_bound() const
+{
+	if (points.empty()) {
+		return Eigen::Vector3d(0.0, 0.0, 0.0);
+	}
+	return std::accumulate(
+		points.begin(), points.end(), points[0],
+		[](const Eigen::Vector3d& a, const Eigen::Vector3d& b) {
+			return a.array().max(b.array()).matrix();
+		});
+
+}
+
 

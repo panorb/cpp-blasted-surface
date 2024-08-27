@@ -19,6 +19,8 @@ namespace blast
 		void voxelgrid_downsample(float gridSize);
 		std::vector<std::array<size_t, 3>> greedy_triangulation(std::vector<Eigen::Vector3d>);
 		std::vector<Eigen::Vector3d> estimate_normals(float radius);
+		Eigen::Vector3d compute_min_bound() const;
+		Eigen::Vector3d compute_max_bound() const;
 
 	private:
 		std::vector<Eigen::Vector3d> points;
