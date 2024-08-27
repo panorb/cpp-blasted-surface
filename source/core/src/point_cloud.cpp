@@ -1,56 +1,49 @@
 #include <iosfwd>
-#include <iosfwd>
-#include <vector>
-#include <vector>
 #include <vector>
 #include <blast/point_cloud.hpp>
-#include <glm/common.hpp>
-#include <glm/common.hpp>
-#include <glm/common.hpp>
-
 #include <pcl/io/pcd_io.h>
-#include <pcl/io/ply_io.h>
 #include <pcl/features/normal_3d.h>
 #include <pcl/surface/gp3.h>
+#include <pcl/io/ply_io.h>
 
-pcl::PointCloud<pcl::Normal>::Ptr to_pcl_normal_cloud(const std::vector<glm::vec3>& points)
+pcl::PointCloud<pcl::Normal>::Ptr to_pcl_normal_cloud(const std::vector<Eigen::Vector3d>& points)
 {
 	pcl::PointCloud<pcl::Normal>::Ptr cloud(new pcl::PointCloud<pcl::Normal>);
 	cloud->points.resize(points.size());
 
 	for (size_t i = 0; i < points.size(); ++i)
 	{
-		cloud->points[i].normal_x = points[i].x;
-		cloud->points[i].normal_y = points[i].y;
-		cloud->points[i].normal_z = points[i].z;
+		cloud->points[i].normal_x = points[i].x();
+		cloud->points[i].normal_y = points[i].y();
+		cloud->points[i].normal_z = points[i].z();
 	}
 
 	return cloud;
 }
 
-pcl::PointCloud<pcl::PointXYZ>::Ptr to_pcl_point_cloud(const std::vector<glm::vec3>& points)
+pcl::PointCloud<pcl::PointXYZ>::Ptr to_pcl_point_cloud(const std::vector<Eigen::Vector3d>& points)
 {
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
 	cloud->points.resize(points.size());
 
 	for (size_t i = 0; i < points.size(); ++i)
 	{
-		cloud->points[i].x = points[i].x;
-		cloud->points[i].y = points[i].y;
-		cloud->points[i].z = points[i].z;
+		cloud->points[i].x = points[i].x();
+		cloud->points[i].y = points[i].y();
+		cloud->points[i].z = points[i].z();
 	}
 
 	return cloud;
 }
 
-const std::vector<glm::vec3>& blast::Point_cloud::get_points() const
+const std::vector<Eigen::Vector3d>& blast::Point_cloud::get_points() const
 {
 	return points;
 }
 
 std::unique_ptr<blast::Point_cloud> from_pcl_point_cloud(const pcl::PointCloud<pcl::PointXYZ>& pcl_cloud)
 {
-	std::vector<glm::vec3> points;
+	std::vector<Eigen::Vector3d> points;
 
 	points.reserve(pcl_cloud.points.size());
 
@@ -100,7 +93,7 @@ void blast::Point_cloud::voxelgrid_downsample(float gridSize)
 	}
 }
 
-std::vector<std::array<size_t, 3>> blast::Point_cloud::greedy_triangulation(std::vector<glm::vec3> normals)
+std::vector<std::array<size_t, 3>> blast::Point_cloud::greedy_triangulation(std::vector<Eigen::Vector3d> normals)
 {
 	auto pcl_points = to_pcl_point_cloud(points);
 	auto pcl_normals = to_pcl_normal_cloud(normals);
@@ -147,7 +140,7 @@ std::vector<std::array<size_t, 3>> blast::Point_cloud::greedy_triangulation(std:
 	return triangles_vec;
 }
 
-std::vector<glm::vec3> blast::Point_cloud::estimate_normals(float radius)
+std::vector<Eigen::Vector3d> blast::Point_cloud::estimate_normals(float radius)
 {
 	auto normals = std::make_shared<pcl::PointCloud<pcl::Normal>>();
 	auto pcl_points = to_pcl_point_cloud(points);
@@ -160,7 +153,7 @@ std::vector<glm::vec3> blast::Point_cloud::estimate_normals(float radius)
 	n.setKSearch(8);
 	n.compute(*normals);
 
-	std::vector<glm::vec3> normals_vec;
+	std::vector<Eigen::Vector3d> normals_vec;
 	for (const auto& normal : normals->points)
 	{
 		normals_vec.emplace_back(normal.normal_x, normal.normal_y, normal.normal_z);
