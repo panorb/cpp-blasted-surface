@@ -2,7 +2,10 @@
 #include <meshview/meshview_imgui.hpp>
 #include <Eigen/Core>
 #include "Eigen/Geometry"
+
+// Eigene Includes
 #include <blast/point_cloud.hpp>
+#include <blast/oliveira_planes.hpp>
 
 using namespace meshview;
 
@@ -16,6 +19,8 @@ int main(int argc, char** argv)
 
     std::string filename = R"(cube.ply)";
     std::unique_ptr<blast::Point_cloud> point_cloud = nullptr;
+    OliveiraPlaneSegmenter oliveira_planes;
+    
 
     viewer.on_gui = [&]() -> bool {
         bool redraw_meshes = false;
@@ -33,12 +38,25 @@ int main(int argc, char** argv)
             point_cloud = nullptr;
         }
 
-        ImGui::InputText("input text", &filename);
+        ImGui::InputText("Pointcloud file", &filename);
         if (ImGui::Button("Load point cloud"))
         {
 			if (!filename.empty())
 			{
-                point_cloud = blast::Point_cloud::load_ply_file(filename);
+                if (filename.find(".ply") != std::string::npos)
+				{
+                    point_cloud = blast::Point_cloud::load_ply_file(filename);
+				}
+                else if (filename.find(".pcd") != std::string::npos)
+                {
+                    point_cloud = blast::Point_cloud::load_pcd_file(filename);
+                }
+                else
+                {
+                	std::cerr << "Unknown file format" << std::endl;
+                    return false;
+                }
+                
 
                 size_t point_count = point_cloud->get_points().size();
                 Points points{point_count, 3};
@@ -119,6 +137,48 @@ int main(int argc, char** argv)
             
 			redraw_meshes = true;
 	        
+        }
+
+        ImGui::Separator();
+        oliveira_planes.renderControls();
+        if (ImGui::Button("Oliveira: Extract Planes"))
+        {
+            std::vector<glm::vec3> points = point_cloud->get_points();
+            std::vector<glm::vec3> normals = point_cloud->estimate_normals(25.f);
+
+            oliveira_planes.fromArrays(points, normals);
+
+            auto planes = oliveira_planes.execute();
+            // Visualize planes
+            for (auto& plane : planes)
+			{
+				auto box_points = plane->GetBoxPoints();
+				Points vertices{box_points.size(), 3};
+
+				for (size_t i = 0; i < box_points.size(); ++i)
+				{
+                    vertices.row(i)(0) = box_points[i].x();
+                    vertices.row(i)(1) = box_points[i].y();
+                    vertices.row(i)(2) = box_points[i].z();
+				}
+
+				Triangles triangles{12, 3};
+				triangles << 0, 1, 2,
+							 0, 2, 3,
+							 0, 4, 5,
+							 0, 5, 1,
+							 1, 5, 6,
+							 1, 6, 2,
+							 2, 6, 7,
+							 2, 7, 3,
+							 3, 7, 4,
+							 3, 4, 0,
+							 4, 7, 6,
+							 4, 6, 5;
+
+				viewer.add_mesh(vertices, triangles, 1.0f, 0.0f, 0.0f);
+			}
+
         }
             
         ImGui::End();

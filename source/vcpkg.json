@@ -10,6 +10,7 @@
 		"pcl",
 		"spdlog",
 		"eigen3",
+		"qhull",
 		{
 			"name": "imgui",
 			"features": ["glfw-binding", "opengl3-binding"]
