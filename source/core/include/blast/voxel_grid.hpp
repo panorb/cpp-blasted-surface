@@ -8,6 +8,7 @@
 #include "point_cloud.hpp"
 
 namespace blast {
+
 class Voxel
 {
 public:
@@ -40,15 +41,23 @@ public:
 
 		return Eigen::Vector3d::Zero();
 	}
+	bool has_voxel(const Eigen::Vector3i& idx) const
+	{
+		return voxels.find(idx) != voxels.end();
+	}
 
 	std::vector<Eigen::Vector3d> get_voxel_bounding_points(const Eigen::Vector3i& idx) const;
 
 	static std::shared_ptr<Voxel_grid> create_from_point_cloud(const Point_cloud& input, double voxel_size);
 	static std::shared_ptr<Voxel_grid> create_from_point_cloud_within_bounds(const Point_cloud& input, double voxel_size, const Eigen::Vector3d& min_bound, const Eigen::Vector3d& max_bound);
-private:
 	double voxel_size;
 	Eigen::Vector3d origin = Eigen::Vector3d::Zero();
+private:
 	//std::vector<std::vector<bool>> active_voxels;
 	std::unordered_map<Eigen::Vector3i, Voxel, utility::hash_eigen<Eigen::Vector3i>> voxels;
 };
+
+
+std::shared_ptr<Voxel_grid> dilate_grid(Voxel_grid& voxel_grid, int dilation_amount);
+std::shared_ptr<Voxel_grid> subtract_grids(Voxel_grid& grid1, Voxel_grid& grid2);
 }

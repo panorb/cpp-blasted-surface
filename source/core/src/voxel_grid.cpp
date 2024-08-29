@@ -15,8 +15,9 @@ void blast::Voxel_grid::remove_voxel(const Eigen::Vector3i& idx)
 std::vector<blast::Voxel> blast::Voxel_grid::get_voxels() const
 {
 	std::vector<Voxel> voxel_vector;
-	for (const auto& [key, value] : voxels) {
-		voxel_vector.push_back(value);
+	auto b = voxels.size();
+	for (auto& el : voxels) {
+		voxel_vector.push_back(el.second);
 	}
 	return voxel_vector;
 }
@@ -70,7 +71,72 @@ std::shared_ptr<blast::Voxel_grid> blast::Voxel_grid::create_from_point_cloud_wi
 
 		Eigen::Vector3i idx = output->get_voxel(point);
 		Voxel voxel{ idx };
-		output->add_voxel(voxel);
+		if (!output->has_voxel(idx)) {
+			output->add_voxel(voxel);
+		}
 	}
+
+	return output;
+}
+
+std::shared_ptr<blast::Voxel_grid> blast::dilate_grid(Voxel_grid& voxel_grid, int dilation_amount)
+{
+	auto voxels = voxel_grid.get_voxels();
+	auto voxel_count = voxels.size();
+	auto voxel_size = voxel_grid.voxel_size;
+	auto origin = voxel_grid.origin;
+
+	auto output = std::make_shared<Voxel_grid>();
+	output->voxel_size = voxel_size;
+	output->origin = origin;
+
+	for (size_t i = 0; i < voxel_count; ++i)
+	{
+		auto voxel = voxels[i];
+		auto idx = voxel.grid_index;
+		for (int x = -dilation_amount; x <= dilation_amount; ++x)
+		{
+			for (int y = -dilation_amount; y <= dilation_amount; ++y)
+			{
+				for (int z = -dilation_amount; z <= dilation_amount; ++z)
+				{
+					Eigen::Vector3i new_idx = idx + Eigen::Vector3i(x, y, z);
+					if (!output->has_voxel(new_idx))
+					{
+						Voxel new_voxel{ new_idx };
+						output->add_voxel(new_voxel);
+					}
+				}
+			}
+		}
+	}
+
+	return output;
+}
+
+std::shared_ptr<blast::Voxel_grid> blast::subtract_grids(Voxel_grid& grid1, Voxel_grid& grid2)
+{
+	auto voxels1 = grid1.get_voxels();
+	auto voxels2 = grid2.get_voxels();
+	auto voxel_count1 = voxels1.size();
+	auto voxel_count2 = voxels2.size();
+	auto voxel_size = grid1.voxel_size;
+	auto origin = grid1.origin;
+
+	auto output = std::make_shared<Voxel_grid>();
+	output->voxel_size = voxel_size;
+	output->origin = origin;
+
+	for (size_t i = 0; i < voxel_count1; ++i)
+	{
+		auto voxel = voxels1[i];
+		auto idx = voxel.grid_index;
+		if (!grid2.has_voxel(idx))
+		{
+			output->add_voxel(voxel);
+		}
+	}
+
+	return output;
 }
 

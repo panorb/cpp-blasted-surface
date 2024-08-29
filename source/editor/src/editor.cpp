@@ -5,7 +5,10 @@
 
 // Eigene Includes
 #include <blast/point_cloud.hpp>
-#include <blast/oliveira_planes.hpp>
+//#include <blast/oliveira_planes.hpp>
+#include <blast/voxel_grid.hpp>
+#include <spdlog/spdlog.h>
+// #include <spdlog/spdlog.h>
 
 using namespace meshview;
 
@@ -16,10 +19,14 @@ int main(int argc, char** argv)
 	viewer.camera.dist_to_center = 5.f;
     viewer.cull_face = false;
 
-
     std::string filename = R"(cube.ply)";
     std::unique_ptr<blast::Point_cloud> point_cloud = nullptr;
-    OliveiraPlaneSegmenter oliveira_planes;
+    //OliveiraPlaneSegmenter oliveira_planes;
+
+	std::shared_ptr<blast::Voxel_grid> voxel_grid;
+
+    std::vector<Mesh*> voxel_grid_meshes;
+    PointCloud* voxel_grid_points;
     
 
     viewer.on_gui = [&]() -> bool {
@@ -53,7 +60,8 @@ int main(int argc, char** argv)
 				}
 				else
 				{
-					spdlog::error("Unsupported file format");
+					//spdlog::error("Unsupported file format");
+                    return false;
 				}
 
                 size_t point_count = point_cloud->get_points().size();
@@ -149,10 +157,54 @@ int main(int argc, char** argv)
         }
 
         ImGui::Separator();
-        oliveira_planes.renderControls();
+
+        if (ImGui::Button("Create voxel grid based on point cloud"))
+        {
+            voxel_grid = blast::Voxel_grid::create_from_point_cloud(*point_cloud, 0.01);
+            auto slightly_expanded_grid = blast::dilate_grid(*voxel_grid, 2);
+            auto strongly_expanded_grid = blast::dilate_grid(*voxel_grid, 3);
+            voxel_grid = blast::subtract_grids(*strongly_expanded_grid, *slightly_expanded_grid);
+
+			auto voxels = voxel_grid->get_voxels();
+			auto voxel_count = voxels.size();
+
+        	Points points{ voxel_count, 3 };
+
+            for (size_t i = 0; i < voxel_count; ++i)
+            {
+                auto voxel = voxels[i];
+                spdlog::info("Voxel [{0:d}, {1:d}, {2:d}]", voxel.grid_index.x(), voxel.grid_index.y(), voxel.grid_index.z());
+
+                Eigen::Vector3d voxel_center = voxel_grid->get_voxel_center_coordinate(voxel.grid_index);
+
+                points.row(i)(0) = voxel_center.x();
+                points.row(i)(1) = voxel_center.y();
+                points.row(i)(2) = voxel_center.z();
+
+				voxel_grid_meshes.push_back(
+                    &viewer.add_cube(voxel_center.cast<float>(), 0.01)
+                );
+            }
+
+            // viewer.add_cube();
+            voxel_grid_points = &viewer.add_point_cloud(points, 0.f, 1.0f, 0.0f).enable(false);
+            redraw_meshes = true;
+        }
+
+        if (ImGui::Button("Toggle visibility"))
+        {
+			for (auto& mesh : voxel_grid_meshes)
+			{
+                mesh->enable(!mesh->enabled);
+			}
+
+            voxel_grid_points->enable(!voxel_grid_points->enabled);
+        }
+
+        /*oliveira_planes.renderControls();
         if (ImGui::Button("Oliveira: Extract Planes"))
         {
-            /*std::vector<glm::vec3> points = point_cloud->get_points();
+            std::vector<glm::vec3> points = point_cloud->get_points();
             std::vector<glm::vec3> normals = point_cloud->estimate_normals(25.f);
 
             oliveira_planes.fromArrays(points, normals);
@@ -186,9 +238,8 @@ int main(int argc, char** argv)
 							 4, 6, 5;
 
 				viewer.add_mesh(vertices, triangles, 1.0f, 0.0f, 0.0f);
-			}*/
-
-        }
+			}
+        }*/
             
         ImGui::End();
 
