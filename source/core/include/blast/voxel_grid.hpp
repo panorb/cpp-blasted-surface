@@ -8,6 +8,14 @@
 #include "point_cloud.hpp"
 
 namespace blast {
+	struct ViaPoint
+	{
+		ViaPoint() = default;
+		ViaPoint(Eigen::Vector3d& point, Eigen::Vector3d& direction) : point(point), direction(direction) {};
+
+		Eigen::Vector3d point;
+		Eigen::Vector3d direction;
+	};
 
 class Voxel
 {
@@ -41,6 +49,8 @@ public:
 
 		return Eigen::Vector3d::Zero();
 	}
+	std::vector<Voxel> get_voxels_around(Eigen::Vector3i idx, int distance) const;
+
 	bool has_voxel(const Eigen::Vector3i& idx) const
 	{
 		return voxels.find(idx) != voxels.end();
@@ -60,4 +70,8 @@ private:
 
 std::shared_ptr<Voxel_grid> dilate_grid(Voxel_grid& voxel_grid, int dilation_amount);
 std::shared_ptr<Voxel_grid> subtract_grids(Voxel_grid& grid1, Voxel_grid& grid2);
+std::vector<ViaPoint> generate_via_point_candidates(const Voxel_grid& voxel_grid, size_t amount,
+                                                    double potential_field_max_distance);
+//std::pair<std::vector<>>
+
 }

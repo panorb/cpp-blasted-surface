@@ -28,6 +28,23 @@ Eigen::Vector3i blast::Voxel_grid::get_voxel(const Eigen::Vector3d& point) const
 	return (Eigen::floor(voxel_f.array())).cast<int>();
 }
 
+std::vector<blast::Voxel> blast::Voxel_grid::get_voxels_around(const Eigen::Vector3i idx, int distance) const
+{
+	std::vector<Voxel> voxels_around;
+	for (int x = -distance; x <= distance; ++x) {
+		for (int y = -distance; y <= distance; ++y) {
+			for (int z = -distance; z <= distance; ++z) {
+				Eigen::Vector3i new_idx = idx + Eigen::Vector3i(x, y, z);
+				if (has_voxel(new_idx)) {
+					voxels_around.push_back(voxels.at(new_idx));
+				}
+			}
+		}
+	}
+
+	return voxels_around;
+}
+
 std::vector<Eigen::Vector3d> blast::Voxel_grid::get_voxel_bounding_points(const Eigen::Vector3i& idx) const
 {
 	double r = voxel_size / 2.0;
@@ -138,5 +155,29 @@ std::shared_ptr<blast::Voxel_grid> blast::subtract_grids(Voxel_grid& grid1, Voxe
 	}
 
 	return output;
+}
+
+std::vector<blast::ViaPoint> blast::generate_via_point_candidates(const Voxel_grid& voxel_grid, size_t amount, double potential_field_max_distance)
+{
+	std::vector<ViaPoint> via_points;
+	auto voxels = voxel_grid.get_voxels();
+	auto voxel_count = voxels.size();
+	auto voxel_size = voxel_grid.voxel_size;
+	auto origin = voxel_grid.origin;
+
+	for (int i = 0; i < amount; ++i)
+	{
+		auto idx = voxels[rand() % voxel_count].grid_index;
+		Eigen::Vector3d point = voxel_grid.get_voxel_center_coordinate(idx);
+		Eigen::Vector3d direction = Eigen::Vector3d::Random().normalized();
+
+		// TODO: Actual direction generation
+
+		ViaPoint via_point{ point, direction };
+		via_points.push_back(via_point);
+	}
+
+
+	return via_points;
 }
 

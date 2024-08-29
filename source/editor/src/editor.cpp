@@ -12,21 +12,82 @@
 
 using namespace meshview;
 
+std::string filename = R"(cube.ply)";
+std::unique_ptr<blast::Point_cloud> base_point_cloud = nullptr;
+size_t base_point_cloud_index = 0;
+
+//OliveiraPlaneSegmenter oliveira_planes;
+
+std::shared_ptr<blast::Voxel_grid> displayed_voxel_grid;
+
+std::shared_ptr<blast::Voxel_grid> model_voxel_grid;
+std::shared_ptr<blast::Voxel_grid> safety_distance_voxel_grid;
+std::shared_ptr<blast::Voxel_grid> max_viewing_range_voxel_grid;
+std::shared_ptr<blast::Voxel_grid> via_point_voxel_grid;
+
+std::vector<Mesh*> voxel_grid_meshes;
+std::vector<size_t> voxel_grid_mesh_indices;
+
+PointCloud* voxel_grid_points;
+size_t voxel_grid_points_index = 0;
+
+int candidate_amount = 10;
+float potential_field_max_distance = 12.0f;
+
+float voxel_size = 10.0f;
+
+bool voxel_meshes_visible = true;
+bool voxel_points_visible = false;
+
+
+void update_displayed_voxel_grid(Viewer& viewer, Vector3f color = Vector3f(1.0, 0.8, 0.8))
+{
+    if (voxel_grid_points != nullptr)
+    {
+        viewer.point_clouds.erase(viewer.point_clouds.begin() + voxel_grid_points_index);
+        voxel_grid_points = nullptr;
+    }
+
+	for (auto mesh_it = voxel_grid_mesh_indices.rbegin(); mesh_it != voxel_grid_mesh_indices.rend(); ++mesh_it)
+	{
+		viewer.meshes.erase(viewer.meshes.begin() + *mesh_it);
+	}
+
+    voxel_grid_mesh_indices.clear();
+
+    auto voxels = displayed_voxel_grid->get_voxels();
+    auto voxel_count = voxels.size();
+
+    Points points{ voxel_count, 3 };
+
+    for (size_t i = 0; i < voxel_count; ++i)
+    {
+        auto voxel = voxels[i];
+        spdlog::info("Voxel [{0:d}, {1:d}, {2:d}]", voxel.grid_index.x(), voxel.grid_index.y(), voxel.grid_index.z());
+
+        Eigen::Vector3d voxel_center = displayed_voxel_grid->get_voxel_center_coordinate(voxel.grid_index);
+
+        points.row(i)(0) = voxel_center.x();
+        points.row(i)(1) = voxel_center.y();
+        points.row(i)(2) = voxel_center.z();
+
+		voxel_grid_mesh_indices.push_back(viewer.meshes.size());
+        voxel_grid_meshes.push_back(
+			&viewer.add_cube(voxel_center.cast<float>(), voxel_size, color).enable(voxel_meshes_visible)
+        );
+    }
+
+    // viewer.add_cube();
+    voxel_grid_points_index = viewer.point_clouds.size();
+    voxel_grid_points = &viewer.add_point_cloud(points, color.x(), color.y(), color.z()).enable(voxel_points_visible);
+}
+
 int main(int argc, char** argv)
 {
 	Viewer viewer;
 	viewer.draw_axes = true;
 	viewer.camera.dist_to_center = 5.f;
     viewer.cull_face = false;
-
-    std::string filename = R"(cube.ply)";
-    std::unique_ptr<blast::Point_cloud> point_cloud = nullptr;
-    //OliveiraPlaneSegmenter oliveira_planes;
-
-	std::shared_ptr<blast::Voxel_grid> voxel_grid;
-
-    std::vector<Mesh*> voxel_grid_meshes;
-    PointCloud* voxel_grid_points;
     
 
     viewer.on_gui = [&]() -> bool {
@@ -42,7 +103,7 @@ int main(int argc, char** argv)
         {
 	        viewer.meshes.clear();
             viewer.point_clouds.clear();
-            point_cloud = nullptr;
+            base_point_cloud = nullptr;
         }
 
         ImGui::InputText("Pointcloud file", &filename);
@@ -50,13 +111,20 @@ int main(int argc, char** argv)
         {
 			if (!filename.empty())
 			{
+                if (base_point_cloud != nullptr)
+                {
+					viewer.point_clouds.erase(viewer.point_clouds.begin() + base_point_cloud_index);
+                }
+
+				base_point_cloud_index = viewer.point_clouds.size();
+
                 if (filename.ends_with(".ply"))
                 {
-                    point_cloud = blast::Point_cloud::load_ply_file(filename);
+                    base_point_cloud = blast::Point_cloud::load_ply_file(filename);
 				}
 				else if (filename.ends_with(".pcd"))
 				{
-					point_cloud = blast::Point_cloud::load_pcd_file(filename);
+					base_point_cloud = blast::Point_cloud::load_pcd_file(filename);
 				}
 				else
 				{
@@ -64,14 +132,14 @@ int main(int argc, char** argv)
                     return false;
 				}
 
-                size_t point_count = point_cloud->get_points().size();
+                size_t point_count = base_point_cloud->get_points().size();
                 Points points{point_count, 3};
 
                 for (size_t i = 0; i < point_count; ++i)
 				{
-					points.row(i)(0) = point_cloud->get_points()[i][0];
-                    points.row(i)(1) = point_cloud->get_points()[i][1];
-                    points.row(i)(2) = point_cloud->get_points()[i][2];
+					points.row(i)(0) = base_point_cloud->get_points()[i][0];
+                    points.row(i)(1) = base_point_cloud->get_points()[i][1];
+                    points.row(i)(2) = base_point_cloud->get_points()[i][2];
 				}
 
                 viewer.add_point_cloud(points, 0.f, 1.0f, 1.0f);
@@ -81,18 +149,18 @@ int main(int argc, char** argv)
         }
 
         if (ImGui::Button("Downsample using voxel grid")) {
-            point_cloud->voxelgrid_downsample(0.04f);
+            base_point_cloud->voxelgrid_downsample(3.0f);
 
             viewer.point_clouds.clear();
 
-            size_t point_count = point_cloud->get_points().size();
+            size_t point_count = base_point_cloud->get_points().size();
             Points points{ point_count, 3 };
 
             for (size_t i = 0; i < point_count; ++i)
             {
-                points.row(i)(0) = point_cloud->get_points()[i][0];
-                points.row(i)(1) = point_cloud->get_points()[i][1];
-                points.row(i)(2) = point_cloud->get_points()[i][2];
+                points.row(i)(0) = base_point_cloud->get_points()[i][0];
+                points.row(i)(1) = base_point_cloud->get_points()[i][1];
+                points.row(i)(2) = base_point_cloud->get_points()[i][2];
             }
 
             viewer.add_point_cloud(points, 0.f, 1.0f, 1.0f);
@@ -106,9 +174,9 @@ int main(int argc, char** argv)
             
 			viewer.meshes.clear();
 
-			std::vector<Eigen::Vector3d> points = point_cloud->get_points();
-            std::vector<Eigen::Vector3d> p_normals = point_cloud->estimate_normals(25.f);
-            auto triangles_vec = point_cloud->greedy_triangulation(p_normals);
+			std::vector<Eigen::Vector3d> points = base_point_cloud->get_points();
+            std::vector<Eigen::Vector3d> p_normals = base_point_cloud->estimate_normals(25.f);
+            auto triangles_vec = base_point_cloud->greedy_triangulation(p_normals);
 
             Points vertices{points.size(), 3};
             for (size_t i = 0; i < points.size(); ++i)
@@ -158,54 +226,112 @@ int main(int argc, char** argv)
 
         ImGui::Separator();
 
+		ImGui::InputFloat("Voxel size", &voxel_size);
+
         if (ImGui::Button("Create voxel grid based on point cloud"))
         {
-            voxel_grid = blast::Voxel_grid::create_from_point_cloud(*point_cloud, 0.01);
-            auto slightly_expanded_grid = blast::dilate_grid(*voxel_grid, 2);
-            auto strongly_expanded_grid = blast::dilate_grid(*voxel_grid, 3);
-            voxel_grid = blast::subtract_grids(*strongly_expanded_grid, *slightly_expanded_grid);
+            model_voxel_grid = blast::Voxel_grid::create_from_point_cloud(*base_point_cloud, voxel_size);
+			displayed_voxel_grid = model_voxel_grid;
 
-			auto voxels = voxel_grid->get_voxels();
-			auto voxel_count = voxels.size();
+            //auto slightly_expanded_grid = blast::dilate_grid(*displayed_voxel_grid, 2);
+            //auto strongly_expanded_grid = blast::dilate_grid(*displayed_voxel_grid, 3);
+            // displayed_voxel_grid = blast::subtract_grids(*strongly_expanded_grid, *slightly_expanded_grid);
 
-        	Points points{ voxel_count, 3 };
-
-            for (size_t i = 0; i < voxel_count; ++i)
-            {
-                auto voxel = voxels[i];
-                spdlog::info("Voxel [{0:d}, {1:d}, {2:d}]", voxel.grid_index.x(), voxel.grid_index.y(), voxel.grid_index.z());
-
-                Eigen::Vector3d voxel_center = voxel_grid->get_voxel_center_coordinate(voxel.grid_index);
-
-                points.row(i)(0) = voxel_center.x();
-                points.row(i)(1) = voxel_center.y();
-                points.row(i)(2) = voxel_center.z();
-
-				voxel_grid_meshes.push_back(
-                    &viewer.add_cube(voxel_center.cast<float>(), 0.01)
-                );
-            }
-
-            // viewer.add_cube();
-            voxel_grid_points = &viewer.add_point_cloud(points, 0.f, 1.0f, 0.0f).enable(false);
+            update_displayed_voxel_grid(viewer, Vector3f(1, 0.8, 0.8));
             redraw_meshes = true;
         }
 
-        if (ImGui::Button("Toggle visibility"))
+        if (ImGui::Button("Create voxel grid with safety distance"))
+        {
+			safety_distance_voxel_grid = blast::dilate_grid(*model_voxel_grid, 1);
+			displayed_voxel_grid = safety_distance_voxel_grid;
+
+			update_displayed_voxel_grid(viewer, Vector3f(0.77, 0.87, 0.7));
+            redraw_meshes = true;
+        }
+
+        if (ImGui::Button("Create voxel grid with max viewing range"))
+        {
+			max_viewing_range_voxel_grid = blast::dilate_grid(*model_voxel_grid, 3);
+			displayed_voxel_grid = max_viewing_range_voxel_grid;
+
+            update_displayed_voxel_grid(viewer);
+			redraw_meshes = true;
+        }
+
+        if (ImGui::Button("Subtract max viewing range from safety distance grid"))
+        {
+			via_point_voxel_grid = blast::subtract_grids(*max_viewing_range_voxel_grid, *safety_distance_voxel_grid);
+			displayed_voxel_grid = via_point_voxel_grid;
+
+			update_displayed_voxel_grid(viewer);
+			redraw_meshes = true;
+        }
+
+        if (ImGui::Button("Toggle voxel mesh visibility"))
         {
 			for (auto& mesh : voxel_grid_meshes)
 			{
+				voxel_meshes_visible = !voxel_meshes_visible;
                 mesh->enable(!mesh->enabled);
 			}
 
+			if (voxel_grid_meshes[0]->enabled) {
+				voxel_grid_points->enable(false);
+			}
+            voxel_points_visible = false;
+        }
+
+        if (ImGui::Button("Toggle voxel center point visibility"))
+        {
+			voxel_points_visible = !voxel_points_visible;
             voxel_grid_points->enable(!voxel_grid_points->enabled);
+
+            if (voxel_grid_points->enabled) {
+                for (auto& mesh : voxel_grid_meshes)
+                {
+                    mesh->enable(false);
+                }
+				voxel_meshes_visible = false;
+            }
+        }
+
+        ImGui::InputInt("Candidate amount", &candidate_amount);
+		ImGui::InputFloat("Potential field max distance", &potential_field_max_distance);
+
+        if (ImGui::Button("Generate via-point candidates from voxel grid"))
+        {
+			auto via_points = blast::generate_via_point_candidates(*displayed_voxel_grid, candidate_amount, potential_field_max_distance);
+			spdlog::info("Generated {0:d} via points", via_points.size());
+
+			for (auto& via_point : via_points)
+			{
+				auto point = via_point.point;
+				auto direction = via_point.direction;
+
+                viewer.add_sphere(
+					point.cast<float>(),
+					2.0f,
+					Vector3f(1.0f, 0.0f, 0.0f)
+				);
+
+
+				viewer.add_line(
+					point.cast<float>(),
+					(point + direction * 8.f).cast<float>(),
+					Vector3f(1.0f, 0.0f, 0.0f)
+				);
+
+			}
+
+            redraw_meshes = true;
         }
 
         /*oliveira_planes.renderControls();
         if (ImGui::Button("Oliveira: Extract Planes"))
         {
-            std::vector<glm::vec3> points = point_cloud->get_points();
-            std::vector<glm::vec3> normals = point_cloud->estimate_normals(25.f);
+            std::vector<glm::vec3> points = base_point_cloud->get_points();
+            std::vector<glm::vec3> normals = base_point_cloud->estimate_normals(25.f);
 
             oliveira_planes.fromArrays(points, normals);
 
