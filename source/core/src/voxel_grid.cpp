@@ -157,9 +157,9 @@ std::shared_ptr<blast::Voxel_grid> blast::subtract_grids(Voxel_grid& grid1, Voxe
 	return output;
 }
 
-std::vector<blast::ViaPoint> blast::generate_via_point_candidates(const Voxel_grid& voxel_grid, size_t amount, double potential_field_max_distance)
+std::vector<blast::Via_point> blast::generate_via_point_candidates(const Voxel_grid& voxel_grid, size_t amount, double potential_field_max_distance)
 {
-	std::vector<ViaPoint> via_points;
+	std::vector<Via_point> via_points;
 	auto voxels = voxel_grid.get_voxels();
 	auto voxel_count = voxels.size();
 	auto voxel_size = voxel_grid.voxel_size;
@@ -173,7 +173,7 @@ std::vector<blast::ViaPoint> blast::generate_via_point_candidates(const Voxel_gr
 
 		// TODO: Actual direction generation
 
-		ViaPoint via_point{ point, direction };
+		Via_point via_point{ point, direction };
 		via_points.push_back(via_point);
 	}
 

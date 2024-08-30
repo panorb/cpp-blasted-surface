@@ -25,6 +25,5 @@ include(add_shaders.cmake)
 add_subdirectory(core)
 add_subdirectory(visualizer)
 add_subdirectory(meshview)
-add_subdirectory(segment_planes)
 add_subdirectory(editor)
 

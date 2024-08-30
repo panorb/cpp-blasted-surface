@@ -1,7 +1,7 @@
-#include "blast/bounding_box.hpp"
+#include "blast/planes/bounding_box.hpp"
 
 
-OrientedBoundingBox& OrientedBoundingBox::Clear() {
+Oriented_bounding_box& Oriented_bounding_box::clear() {
     center_.setZero();
     extent_.setZero();
     R_ = Eigen::Matrix3f::Identity();
@@ -9,28 +9,28 @@ OrientedBoundingBox& OrientedBoundingBox::Clear() {
     return *this;
 }
 
-bool OrientedBoundingBox::IsEmpty() const { return Volume() <= 0; }
+bool Oriented_bounding_box::is_empty() const { return volume() <= 0; }
 
-Eigen::Vector3f OrientedBoundingBox::GetCenter() const { return center_; }
+Eigen::Vector3f Oriented_bounding_box::get_center() const { return center_; }
 
-OrientedBoundingBox OrientedBoundingBox::GetOrientedBoundingBox(bool) const {
+Oriented_bounding_box Oriented_bounding_box::get_oriented_bounding_box(bool) const {
     return *this;
 }
 
-OrientedBoundingBox OrientedBoundingBox::GetMinimalOrientedBoundingBox(
+Oriented_bounding_box Oriented_bounding_box::get_minimal_oriented_bounding_box(
     bool) const {
     return *this;
 }
 
-OrientedBoundingBox& OrientedBoundingBox::Transform(
+Oriented_bounding_box& Oriented_bounding_box::transform(
     const Eigen::Matrix4f& transformation) {
     spdlog::error(
-        "A general transform of an OrientedBoundingBox is not implemented. "
-        "Call Translate, Scale, and Rotate.");
+        "A general transform of an Oriented_bounding_box is not implemented. "
+        "Call translate, scale, and rotate.");
     return *this;
 }
 
-OrientedBoundingBox& OrientedBoundingBox::Translate(
+Oriented_bounding_box& Oriented_bounding_box::translate(
     const Eigen::Vector3f& translation, bool relative) {
     if (relative) {
         center_ += translation;
@@ -41,25 +41,25 @@ OrientedBoundingBox& OrientedBoundingBox::Translate(
     return *this;
 }
 
-OrientedBoundingBox& OrientedBoundingBox::Scale(const double scale,
+Oriented_bounding_box& Oriented_bounding_box::scale(const double scale,
     const Eigen::Vector3f& center) {
     extent_ *= scale;
     center_ = scale * (center_ - center) + center;
     return *this;
 }
 
-OrientedBoundingBox& OrientedBoundingBox::Rotate(
+Oriented_bounding_box& Oriented_bounding_box::rotate(
     const Eigen::Matrix3f& R, const Eigen::Vector3f& center) {
     R_ = R * R_;
     center_ = R * (center_ - center) + center;
     return *this;
 }
 
-double OrientedBoundingBox::Volume() const {
+double Oriented_bounding_box::volume() const {
     return extent_(0) * extent_(1) * extent_(2);
 }
 
-std::vector<Eigen::Vector3f> OrientedBoundingBox::GetBoxPoints() const {
+std::vector<Eigen::Vector3f> Oriented_bounding_box::get_box_points() const {
     Eigen::Vector3f x_axis = R_ * Eigen::Vector3f(extent_(0) / 2, 0, 0);
     Eigen::Vector3f y_axis = R_ * Eigen::Vector3f(0, extent_(1) / 2, 0);
     Eigen::Vector3f z_axis = R_ * Eigen::Vector3f(0, 0, extent_(2) / 2);
@@ -75,7 +75,7 @@ std::vector<Eigen::Vector3f> OrientedBoundingBox::GetBoxPoints() const {
     return points;
 }
 
-std::vector<size_t> OrientedBoundingBox::GetPointIndicesWithinBoundingBox(
+std::vector<size_t> Oriented_bounding_box::get_point_indices_within_bounding_box(
     const std::vector<Eigen::Vector3f>& points) const {
     std::vector<size_t> indices;
     Eigen::Vector3f dx = R_ * Eigen::Vector3f(1, 0, 0);

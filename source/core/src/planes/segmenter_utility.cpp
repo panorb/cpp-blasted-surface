@@ -1,23 +1,14 @@
-﻿#include "blast/segmenter_utility.hpp"
+﻿#include "blast/planes/segmenter_utility.hpp"
 
-/// \brief Calculate the median of a buffer of data
-///
-/// \param buffer Container of scalar data to find median of. A copy is made
-/// so that buffer may be sorted.
-/// \return Median of buffer data.
-float GetMedian(std::vector<float> buffer) {
+float get_median(std::vector<float> buffer) {
     const size_t N = buffer.size();
     std::nth_element(buffer.begin(), buffer.begin() + N / 2,
         buffer.begin() + N);
     return buffer[N / 2];
 }
 
-/// \brief Calculate the Median Absolute Deviation statistic
-///
-/// \param buffer Container of scalar data to find MAD of.
-/// \param median Precomputed median of buffer.
 /// \return MAD = median(| X_i - median(X) |)
-float GetMAD(const std::vector<float>& buffer, float median) {
+float get_mad(const std::vector<float>& buffer, float median) {
     const size_t N = buffer.size();
     std::vector<float> shifted(N);
     for (size_t i = 0; i < N; i++) {
@@ -29,25 +20,16 @@ float GetMAD(const std::vector<float>& buffer, float median) {
     return k * shifted[N / 2];
 }
 
-/// \brief Calculate spread of data as interval around median
-///
-/// I = [min, max] = [median(X) - α·MAD, median(X) + α·MAD]
-///
-/// \param buffer Container of scalar data to find spread of.
-/// \param min Alpha MADs below median.
-/// \param max Alpha MADs above median.
-void GetMinMaxRScore(const std::vector<float>& buffer, float& min, float& max, float alpha) {
-    float median = GetMedian(buffer);
-    float mad = GetMAD(buffer, median);
+void get_min_max_r_score(const std::vector<float>& buffer, float& min, float& max, float alpha) {
+    float median = get_median(buffer);
+    float mad = get_mad(buffer, median);
     min = median - alpha * mad;
     max = median + alpha * mad;
 }
 
-/// \brief Identify the 2D convex hull of a set of 2D points.
-///
 /// \param points  Set of 2D points to find convex hull of.
 /// \param indices  Indices of resulting convex hull.
-void GetConvexHull2D(const std::vector<Eigen::Vector2f>& points, std::vector<size_t>& indices) {
+void get_convex_hull_2d(const std::vector<Eigen::Vector2f>& points, std::vector<size_t>& indices) {
     static constexpr int DIM = 2;
     std::vector<size_t> pt_map;
 

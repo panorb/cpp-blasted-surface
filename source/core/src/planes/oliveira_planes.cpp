@@ -1,10 +1,10 @@
-#include "blast/oliveira_planes.hpp"
+#include "blast/planes/oliveira_planes.hpp"
 
-const std::vector<std::shared_ptr<OrientedBoundingBox>> OliveiraPlaneSegmenter::execute() {
+const std::vector<std::shared_ptr<Oriented_bounding_box>> Oliveira_plane_segmenter::execute() {
 	return detect_planar_patches();
 }
 
-void OliveiraPlaneSegmenter::renderControls()
+void Oliveira_plane_segmenter::render_controls()
 {
 	ImGui::DragFloat("Normal similiarity (deg)", &normal_similarity_deg_, .1, 1.0, 90.0);
 	ImGui::DragFloat("Coplanarity (deg)", &coplanarity_deg_, .1, 1.0, 90.0);
@@ -13,7 +13,7 @@ void OliveiraPlaneSegmenter::renderControls()
 	ImGui::DragInt("Min num points", &min_num_points_, 1.0, 3, 200);
 }
 
-const std::vector<std::shared_ptr<OrientedBoundingBox>> OliveiraPlaneSegmenter::detect_planar_patches() {
+const std::vector<std::shared_ptr<Oriented_bounding_box>> Oliveira_plane_segmenter::detect_planar_patches() {
 	spdlog::info("started detecting planar patches");
 	// spdlog::info("started detecting planar patches");
 	SPoint min_bound;
@@ -74,7 +74,7 @@ const std::vector<std::shared_ptr<OrientedBoundingBox>> OliveiraPlaneSegmenter::
 	spdlog::info("neighbors of {} points found in {} seconds", num_points, duration.count());
 
 	// partition the point cloud and search for planar regions
-	BoundaryVolumeHierarchyPtr root = std::make_shared<BoundaryVolumeHierarchy>(
+	BoundaryVolumeHierarchyPtr root = std::make_shared<Boundary_volume_hierarchy>(
 		point_cloud_.get(), normal_cloud_.get(), min_bound.getVector3fMap(), max_bound.getVector3fMap());
 	std::vector<PlaneDetectorPtr> planes;
 	std::vector<PlaneDetectorPtr> plane_points(point_cloud_->points.size(), nullptr);
@@ -92,13 +92,13 @@ const std::vector<std::shared_ptr<OrientedBoundingBox>> OliveiraPlaneSegmenter::
 	} while (changed);
 
 	// extract planar patches by calculating the bounds of each detected plane
-	std::vector<std::shared_ptr<OrientedBoundingBox>> patches;
+	std::vector<std::shared_ptr<Oriented_bounding_box>> patches;
 	extract_patches_from_planes(planes, patches);
 
 	return patches;
 }
 
-bool OliveiraPlaneSegmenter::split_and_detect_planes_recursive(
+bool Oliveira_plane_segmenter::split_and_detect_planes_recursive(
 	const BoundaryVolumeHierarchyPtr& node,
 	std::vector<PlaneDetectorPtr>& planes,
 	std::vector<PlaneDetectorPtr>& plane_points) {
@@ -118,7 +118,7 @@ bool OliveiraPlaneSegmenter::split_and_detect_planes_recursive(
 	bool node_has_plane = false;
 	bool child_has_plane = false;
 
-	node->Partition();
+	node->partition();
 
 	for (const auto& child : node->children_) {
 		if (child != nullptr &&
@@ -128,10 +128,10 @@ bool OliveiraPlaneSegmenter::split_and_detect_planes_recursive(
 	}
 
 	if (!child_has_plane && node->level_ > 2) {
-		auto plane = std::make_shared<PlaneDetector>(normal_similiarity,
+		auto plane = std::make_shared<Plane_detector>(normal_similiarity,
 			coplanarity, outlier_ratio_,
 			min_plane_edge_length_);
-		if (plane->DetectFromPointCloud(node->point_cloud_, node->normal_cloud_, node->indices_)) {
+		if (plane->detect_from_point_cloud(node->point_cloud_, node->normal_cloud_, node->indices_)) {
 			node_has_plane = true;
 			planes.push_back(plane);
 
@@ -145,7 +145,7 @@ bool OliveiraPlaneSegmenter::split_and_detect_planes_recursive(
 	return node_has_plane || child_has_plane;
 }
 
-void OliveiraPlaneSegmenter::grow(
+void Oliveira_plane_segmenter::grow(
 	std::vector<PlaneDetectorPtr>& planes,
 	std::vector<PlaneDetectorPtr>& plane_points,
 	const std::vector<std::vector<int>>& neighbors) {
@@ -170,11 +170,11 @@ void OliveiraPlaneSegmenter::grow(
 			for (const size_t& nbr : neighbors[idx]) {
 				// Skip if this neighboring point has been claimed, or,
 				// if this plane has already visited.
-				if (plane_points[nbr] != nullptr || plane->HasVisited(nbr))
+				if (plane_points[nbr] != nullptr || plane->has_visited(nbr))
 					continue;
-				if (plane->IsInlier(nbr)) {
+				if (plane->is_inlier(nbr)) {
 					// Add this point to the plane and claim ownership
-					plane->AddPoint(nbr);
+					plane->add_point(nbr);
 					plane_points[nbr] = plane;
 					// Since the nbr point has been added to the plane,
 					// be sure to consider *its* neighbors, too.
@@ -182,14 +182,14 @@ void OliveiraPlaneSegmenter::grow(
 				}
 				else {
 					// Nothing to be done with this neighbor point
-					plane->MarkVisited(nbr);
+					plane->mark_visited(nbr);
 				}
 			}
 		}
 	}
 }
 
-void OliveiraPlaneSegmenter::merge(
+void Oliveira_plane_segmenter::merge(
 	std::vector<PlaneDetectorPtr>& planes,
 	std::vector<PlaneDetectorPtr>& plane_points,
 	const std::vector<std::vector<int>>& neighbors) {
@@ -220,12 +220,12 @@ void OliveiraPlaneSegmenter::merge(
 				const size_t j = nplane->index_;
 
 				if (nplane == plane || graph[i * n + j] || graph[j * n + i] ||
-					disconnected_planes[i * n + j] || plane->HasVisited(nbr) ||
-					nplane->HasVisited(idx))
+					disconnected_planes[i * n + j] || plane->has_visited(nbr) ||
+					nplane->has_visited(idx))
 					continue;
 
-				plane->MarkVisited(nbr);
-				nplane->MarkVisited(idx);
+				plane->mark_visited(nbr);
+				nplane->mark_visited(idx);
 
 				const Eigen::Vector3f& pi = point_cloud_->points[idx].getVector3fMap();
 				const Eigen::Vector3f& ni = normal_cloud_->points[idx].getNormalVector3fMap();
@@ -240,19 +240,19 @@ void OliveiraPlaneSegmenter::merge(
 					std::abs(plane->patch_->normal_.dot(nj)) > normal_thr &&
 					std::abs(nplane->patch_->normal_.dot(ni)) >
 					normal_thr &&
-					std::abs(plane->patch_->GetSignedDistanceToPoint(pj)) <
+					std::abs(plane->patch_->get_signed_distance_to_point(pj)) <
 					dist_thr &&
-					std::abs(nplane->patch_->GetSignedDistanceToPoint(pi)) <
+					std::abs(nplane->patch_->get_signed_distance_to_point(pi)) <
 					dist_thr;
 			}
 		}
 	}
 
-	DisjointSet ds(n);
+	Disjoint_set ds(n);
 	for (size_t i = 0; i < n; i++) {
 		for (size_t j = i + 1; j < n; j++) {
 			if (graph[i * n + j] || graph[j * n + i]) {
-				ds.Union(i, j);
+				ds.set_union(i, j);
 			}
 		}
 	}
@@ -260,7 +260,7 @@ void OliveiraPlaneSegmenter::merge(
 	std::vector<size_t> largest_planes(n);
 	std::iota(largest_planes.begin(), largest_planes.end(), 0);
 	for (size_t i = 0; i < n; i++) {
-		const size_t root = ds.Find(i);
+		const size_t root = ds.find(i);
 		if (planes[largest_planes[root]]->indices_.size() <
 			planes[i]->indices_.size()) {
 			largest_planes[root] = i;
@@ -268,10 +268,10 @@ void OliveiraPlaneSegmenter::merge(
 	}
 
 	for (size_t i = 0; i < n; i++) {
-		const size_t root = largest_planes[ds.Find(i)];
+		const size_t root = largest_planes[ds.find(i)];
 		if (root == i) continue;
 		for (const size_t& idx : planes[i]->indices_) {
-			planes[root]->AddPoint(idx);
+			planes[root]->add_point(idx);
 			plane_points[idx] = planes[root];
 		}
 		planes[root]->max_point_dist_ = std::max(planes[root]->max_point_dist_,
@@ -288,7 +288,7 @@ void OliveiraPlaneSegmenter::merge(
 		planes.end());
 }
 
-bool OliveiraPlaneSegmenter::update(
+bool Oliveira_plane_segmenter::update(
 	std::vector<PlaneDetectorPtr>& planes
 ) {
 	bool changed = false;
@@ -296,7 +296,7 @@ bool OliveiraPlaneSegmenter::update(
 		const bool more_than_half_points_are_new =
 			3 * plane->num_new_points_ > plane->indices_.size();
 		if (more_than_half_points_are_new) {
-			plane->Update();
+			plane->update();
 			plane->stable_ = false;
 			changed = true;
 		}
@@ -307,7 +307,7 @@ bool OliveiraPlaneSegmenter::update(
 	return changed;
 }
 
-void OliveiraPlaneSegmenter::fromArrays(std::vector<glm::vec3> points, std::vector<glm::vec3> normals)
+void Oliveira_plane_segmenter::from_arrays(std::vector<glm::vec3> points, std::vector<glm::vec3> normals)
 {
 	
 	point_cloud_ = std::make_shared<SPointCloud>();
@@ -329,9 +329,9 @@ void OliveiraPlaneSegmenter::fromArrays(std::vector<glm::vec3> points, std::vect
 	}
 }
 
-void OliveiraPlaneSegmenter::extract_patches_from_planes(
+void Oliveira_plane_segmenter::extract_patches_from_planes(
 	const std::vector<PlaneDetectorPtr>& planes,
-	std::vector<std::shared_ptr<OrientedBoundingBox>>& patches) {
+	std::vector<std::shared_ptr<Oriented_bounding_box>>& patches) {
 	// Colors (default MATLAB colors)
 	static constexpr int NUM_COLORS = 1;
 	static std::array<Eigen::Vector3f, NUM_COLORS> colors = {
@@ -346,9 +346,9 @@ void OliveiraPlaneSegmenter::extract_patches_from_planes(
 			Eigen::Vector3f(0.6350, 0.0780, 0.1840) };*/
 
 	for (size_t i = 0; i < planes.size(); i++) {
-		if (!planes[i]->IsFalsePositive()) {
+		if (!planes[i]->is_false_positive()) {
 			// create a patch by delimiting the plane using its perimeter points
-			auto obox = planes[i]->DelimitPlane();
+			auto obox = planes[i]->delimit_plane();
 			// planes[i]->
 			// obox->color_ = colors[i % NUM_COLORS];
 			patches.push_back(obox);

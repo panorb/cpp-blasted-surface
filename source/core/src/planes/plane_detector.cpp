@@ -1,11 +1,6 @@
-#include "blast/plane_detector.hpp"
+#include "blast/planes/plane_detector.hpp"
 
-/// \brief Estimate plane from point cloud and selected point indices.
-///
-/// \param point_cloud The point cloud (with points and normals).
-/// \param indices Point indices within point cloud to use.
-/// \return True if indices of point cloud pass robust planarity tests.
-bool PlaneDetector::DetectFromPointCloud(const SPointCloud* point_cloud, const SNormalCloud* normal_cloud, const std::vector<size_t>& indices) {
+bool Plane_detector::detect_from_point_cloud(const SPointCloud* point_cloud, const SNormalCloud* normal_cloud, const std::vector<size_t>& indices) {
     if (point_cloud->empty()) return false;
 
     // Hold a reference to the point cloud. This PlaneDetector
@@ -17,18 +12,15 @@ bool PlaneDetector::DetectFromPointCloud(const SPointCloud* point_cloud, const S
     // TODO: check if there are enough points
 
     // estimate a plane from the relevant points
-    EstimatePlane();
+    estimate_plane();
 
     // check that the estimated plane passes the robust planarity tests
-    return RobustPlanarityTest();
+    return robust_planarity_test();
 }
 
-/// \brief Delimit the plane using its perimeter points.
-///
-/// \return A patch which is the bounded version of the plane.
-std::shared_ptr<OrientedBoundingBox> PlaneDetector::DelimitPlane() {
+std::shared_ptr<Oriented_bounding_box> Plane_detector::delimit_plane() {
     Eigen::Matrix3Xf M;
-    GetPlanePerimeterPoints(M);
+    get_plane_perimeter_points(M);
 
     // Bisection search to find new rotated basis that
     // minimizes the area of bounded plane.
@@ -62,70 +54,62 @@ std::shared_ptr<OrientedBoundingBox> PlaneDetector::DelimitPlane() {
     patch_->center_ +=
         (rect.bottom_left(1) + rect.top_right(1)) / 2. * rect.B.col(1);
 
-    // Scale basis to fit points
+    // scale basis to fit points
     const double width = (rect.top_right.x() - rect.bottom_left.x());
     const double height = (rect.top_right.y() - rect.bottom_left.y());
     const double depth = (rect.top_right.z() - rect.bottom_left.z());
 
-    std::shared_ptr<OrientedBoundingBox> obox =
-        std::make_shared<OrientedBoundingBox>();
+    std::shared_ptr<Oriented_bounding_box> obox =
+        std::make_shared<Oriented_bounding_box>();
     obox->center_ = patch_->center_;
     obox->R_ = rect.B;
     obox->extent_ = Eigen::Vector3f(width, height, 0.001);
     return obox;
 }
 
-/// \brief Determine if a point is an inlier to the estimated plane model.
-///
 /// \param idx  Index of point in point_cloud_
 
-bool PlaneDetector::IsInlier(size_t idx) {
+bool Plane_detector::is_inlier(size_t idx) {
     const Eigen::Vector3f& point = point_cloud_->points[idx].getVector3fMap();
     const Eigen::Vector3f& normal = normal_cloud_->points[idx].getNormalVector3fMap();
     const bool valid_normal =
         std::abs(patch_->normal_.dot(normal)) > min_normal_diff_;
     const bool valid_dist =
-        std::abs(patch_->GetSignedDistanceToPoint(point)) <
+        std::abs(patch_->get_signed_distance_to_point(point)) <
         max_point_dist_;
     return valid_normal && valid_dist;
 }
 
-/// \brief Check if cloud point at index idx has been visited.
 
-bool PlaneDetector::HasVisited(size_t idx) {
+bool Plane_detector::has_visited(size_t idx) {
     return visited_indices_.find(idx) != visited_indices_.end();
 }
 
-/// \brief Mark the cloud point at index idx as visited.
 
-void PlaneDetector::MarkVisited(size_t idx) { visited_indices_.insert(idx); }
+void Plane_detector::mark_visited(size_t idx) { visited_indices_.insert(idx); }
 
-/// \brief Include an addition point at index idx as part of plane set.
 
-void PlaneDetector::AddPoint(size_t idx) {
+void Plane_detector::add_point(size_t idx) {
     indices_.push_back(idx);
     num_new_points_++;
 }
 
-/// \brief Estimate the plane parameters again to include added points.
 
-void PlaneDetector::Update() {
-    EstimatePlane();
+void Plane_detector::update() {
+    estimate_plane();
     visited_indices_.clear();
     num_new_points_ = 0;
     num_updates_++;
 }
 
-/// \brief Check if plane is considered a false positive
 
-bool PlaneDetector::IsFalsePositive() {
-    EstimatePlane();  // TODO: just recalc longest_edge?
+bool Plane_detector::is_false_positive() {
+    estimate_plane();  // TODO: just recalc longest_edge?
     return num_updates_ == 0 || longest_edge_ < plane_edge_length_thr_;
 }
 
-/// \brief Estimate plane from point cloud and selected point indices.
 
-void PlaneDetector::EstimatePlane() {
+void Plane_detector::estimate_plane() {
     min_bound_ =
         Eigen::Vector3f::Constant(std::numeric_limits<float>::max());
     max_bound_ =
@@ -148,8 +132,8 @@ void PlaneDetector::EstimatePlane() {
                 point_cloud_->points[indices_[i]].getArray3fMap()(d));
         }
         // compute the median along this dimension
-        patch_->center_(d) = GetMedian(center_buf);
-        patch_->normal_(d) = GetMedian(normal_buf);
+        patch_->center_(d) = get_median(center_buf);
+        patch_->normal_(d) = get_median(normal_buf);
     }
     patch_->normal_.normalize();
 
@@ -158,16 +142,11 @@ void PlaneDetector::EstimatePlane() {
 
     longest_edge_ = (max_bound_ - min_bound_).maxCoeff();
 
-    ConstructOrthogonalBasis(B_);
+    construct_orthogonal_basis(B_);
 }
 
-/// brief Use robust statistics (i.e., median) to test planarity.
-///
-/// Follows Sec 3.2 of [ArujoOliveira2020].
-///
-/// \return True if passes tests.
 
-bool PlaneDetector::RobustPlanarityTest() {
+bool Plane_detector::robust_planarity_test() {
     // Calculate statistics to robustly test planarity.
     const size_t N = indices_.size();
     // Stores point-to-plane distance of each associated point.
@@ -188,17 +167,17 @@ bool PlaneDetector::RobustPlanarityTest() {
     float tmp;
     // Use lower bound of the spread around the median as an indication
     // of how similar the point normals associated with the patch are.
-    GetMinMaxRScore(normal_similarities, min_normal_diff_, tmp, 3);
+    get_min_max_r_score(normal_similarities, min_normal_diff_, tmp, 3);
     // Use upper bound of the spread around the median as an indication
     // of how close the points associated with the patch are to the patch.
-    GetMinMaxRScore(point_distances, tmp, max_point_dist_, 3);
+    get_min_max_r_score(point_distances, tmp, max_point_dist_, 3);
 
     // Fail if too much "variance" in how similar point normals are to patch
     // normal
-    if (!IsNormalValid()) return false;
+    if (!is_normal_valid()) return false;
 
     // Fail if too much "variance" in distances of points to patch
-    if (!IsDistanceValid()) return false;
+    if (!is_distance_valid()) return false;
 
     // Detect outliers, fail if too many
     std::unordered_map<size_t, bool> outliers;
@@ -224,18 +203,13 @@ bool PlaneDetector::RobustPlanarityTest() {
     return true;
 }
 
-/// \brief Check if detected plane normal is similar to point normals.
 
-bool PlaneDetector::IsNormalValid() const {
+bool Plane_detector::is_normal_valid() const {
     return min_normal_diff_ > normal_similarity_thr_;
 }
 
-/// \brief Check if point distances from detected plane are reasonable.
-///
-/// Constructs an auxiliary vector which captures
-/// coplanarity and curvature of points.
 
-bool PlaneDetector::IsDistanceValid() /*const*/ {
+bool Plane_detector::is_distance_valid() /*const*/ {
     // Test point-to-plane distance w.r.t coplanarity of points.
     // See Fig. 4 of [ArujoOliveira2020].
     const Eigen::Vector3f F =
@@ -244,10 +218,8 @@ bool PlaneDetector::IsDistanceValid() /*const*/ {
     return std::abs(F.dot(patch_->normal_)) < coplanarity_thr_;
 }
 
-/// \brief Find perimeter of 3D points describing a plane
-///
 /// \param M  3D perimeter points
-void PlaneDetector::GetPlanePerimeterPoints(Eigen::Matrix3Xf& M) {
+void Plane_detector::get_plane_perimeter_points(Eigen::Matrix3Xf& M) {
     // project each point onto the 2D span (x-y) of orthogonal basis
     std::vector<Eigen::Vector2f> projectedPoints2d(indices_.size());
     for (size_t i = 0; i < indices_.size(); i++) {
@@ -259,7 +231,7 @@ void PlaneDetector::GetPlanePerimeterPoints(Eigen::Matrix3Xf& M) {
     }
 
     std::vector<size_t> perimeter;
-    GetConvexHull2D(projectedPoints2d, perimeter);
+    get_convex_hull_2d(projectedPoints2d, perimeter);
 
     M = Eigen::Matrix3Xf(3, perimeter.size());
     for (size_t i = 0; i < perimeter.size(); i++) {
@@ -267,7 +239,7 @@ void PlaneDetector::GetPlanePerimeterPoints(Eigen::Matrix3Xf& M) {
     }
 }
 
-pcl::Vertices PlaneDetector::GetPlanePerimeterVertices() {
+pcl::Vertices Plane_detector::get_plane_perimeter_vertices() {
     std::vector<Eigen::Vector2f> projectedPoints2d(indices_.size());
     for (size_t i = 0; i < indices_.size(); i++) {
         const Eigen::Vector3f& p = point_cloud_->points[indices_[i]].getArray3fMap();
@@ -278,7 +250,7 @@ pcl::Vertices PlaneDetector::GetPlanePerimeterVertices() {
     }
 
     std::vector<size_t> perimeter;
-    GetConvexHull2D(projectedPoints2d, perimeter);
+    get_convex_hull_2d(projectedPoints2d, perimeter);
     pcl::Vertices vertices;
 
     for (size_t pidx : perimeter) {
@@ -288,7 +260,7 @@ pcl::Vertices PlaneDetector::GetPlanePerimeterVertices() {
 	return vertices;
 }
 
-PlaneDetector::RotatedRect::RotatedRect(const Eigen::Matrix3Xf& M, const Eigen::Matrix3f& B, float degrees) {
+Plane_detector::RotatedRect::RotatedRect(const Eigen::Matrix3Xf& M, const Eigen::Matrix3f& B, float degrees) {
     Eigen::Matrix3f R;
     R = Eigen::AngleAxisf(degrees * M_PI / 180.,
         Eigen::Vector3f::UnitZ());
@@ -302,17 +274,7 @@ PlaneDetector::RotatedRect::RotatedRect(const Eigen::Matrix3Xf& M, const Eigen::
     area = w * h;
 }
 
-/// \brief Builds an orthogonal basis of the plane using the normal for up.
-///
-/// The constructed basis matrix can be interpreted as the rotation
-/// of the plane w.r.t the world (or, the point cloud sensor) frame.
-/// In other words, each column of B = [x^w_p y^w_p z^w_p] is one of
-/// the plane's basis vectors expressed in the world frame. Therefore,
-/// the matrix B ( = R^w_p) can be used to express the plane points M
-/// (expressed in the world frame) into the "plane" frame via M' = B^T*M
-///
-/// \param B The 3x3 basis matrix.
-void PlaneDetector::ConstructOrthogonalBasis(Eigen::Matrix3f& B) {
+void Plane_detector::construct_orthogonal_basis(Eigen::Matrix3f& B) {
     static constexpr float tol = 1e-3;
     if ((Eigen::Vector3f(0, 1, 1) - patch_->normal_).squaredNorm() > tol) {
         // construct x-vec by cross(normal, [0;1;1])
