@@ -23,7 +23,7 @@ public:
 		float min_plane_edge_length = 0.0,
 		size_t min_num_points = 0) : normal_similarity_deg_(normal_similarity_deg), coplanarity_deg_(coplanarity_deg), outlier_ratio_(outlier_ratio), min_plane_edge_length_(min_plane_edge_length), min_num_points_(min_num_points), Plane_segmenter(cloud, normals) {
 	}
-	void from_arrays(std::vector<glm::vec3> points, std::vector<glm::vec3> normals);
+	void from_arrays(std::vector<Eigen::Vector3d> points, std::vector<Eigen::Vector3d> normals);
 	virtual const std::vector<std::shared_ptr<Oriented_bounding_box>> execute();
 	virtual void render_controls();
 private:

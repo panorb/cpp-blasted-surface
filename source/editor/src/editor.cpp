@@ -11,12 +11,14 @@
 #include <filesystem>
 // #include <spdlog/spdlog.h>
 
+#include <blast/planes/oliveira_planes.hpp>
+
 using namespace meshview;
 
 std::unique_ptr<blast::Point_cloud> base_point_cloud = nullptr;
 size_t base_point_cloud_index = 0;
 
-//OliveiraPlaneSegmenter oliveira_planes;
+Oliveira_plane_segmenter oliveira_planes;
 
 std::shared_ptr<blast::Voxel_grid> displayed_voxel_grid;
 
@@ -77,7 +79,6 @@ void update_displayed_voxel_grid(Viewer& viewer, Vector3f color = Vector3f(1.0, 
         );
     }
 
-    // viewer.add_cube();
     voxel_grid_points_index = viewer.point_clouds.size();
     voxel_grid_points = &viewer.add_point_cloud(points, color.x(), color.y(), color.z()).enable(voxel_points_visible);
 }
@@ -349,19 +350,22 @@ int main(int argc, char** argv)
             redraw_meshes = true;
         }
 
-        /*oliveira_planes.renderControls();
+        ImGui::Separator();
+		ImGui::Text("Oliveira Plane Segmentation");
+
+        oliveira_planes.render_controls();
         if (ImGui::Button("Oliveira: Extract Planes"))
         {
-            std::vector<glm::vec3> points = base_point_cloud->get_points();
-            std::vector<glm::vec3> normals = base_point_cloud->estimate_normals(25.f);
+            std::vector<Eigen::Vector3d> points = base_point_cloud->get_points();
+            std::vector<Eigen::Vector3d> normals = base_point_cloud->estimate_normals(25.f);
 
-            oliveira_planes.fromArrays(points, normals);
+            oliveira_planes.from_arrays(points, normals);
 
             auto planes = oliveira_planes.execute();
             // Visualize planes
             for (auto& plane : planes)
 			{
-				auto box_points = plane->GetBoxPoints();
+				auto box_points = plane->get_box_points();
 				Points vertices{box_points.size(), 3};
 
 				for (size_t i = 0; i < box_points.size(); ++i)
@@ -387,7 +391,7 @@ int main(int argc, char** argv)
 
 				viewer.add_mesh(vertices, triangles, 1.0f, 0.0f, 0.0f);
 			}
-        }*/
+        }
             
         ImGui::End();
 

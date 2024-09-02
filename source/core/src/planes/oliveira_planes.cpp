@@ -307,7 +307,7 @@ bool Oliveira_plane_segmenter::update(
 	return changed;
 }
 
-void Oliveira_plane_segmenter::from_arrays(std::vector<glm::vec3> points, std::vector<glm::vec3> normals)
+void Oliveira_plane_segmenter::from_arrays(std::vector<Eigen::Vector3d> points, std::vector<Eigen::Vector3d> normals)
 {
 	
 	point_cloud_ = std::make_shared<SPointCloud>();
@@ -316,15 +316,15 @@ void Oliveira_plane_segmenter::from_arrays(std::vector<glm::vec3> points, std::v
 	for (size_t i = 0; i < points.size(); i++)
 	{
 		SPoint p;
-		p.x = points[i].x;
-		p.y = points[i].y;
-		p.z = points[i].z;
+		p.x = points[i].x();
+		p.y = points[i].y();
+		p.z = points[i].z();
 		point_cloud_->points.push_back(p);
 
 		SNormal n;
-		n.normal_x = normals[i].x;
-		n.normal_y = normals[i].y;
-		n.normal_z = normals[i].z;
+		n.normal_x = normals[i].x();
+		n.normal_y = normals[i].y();
+		n.normal_z = normals[i].z();
 		normal_cloud_->points.push_back(n);
 	}
 }
