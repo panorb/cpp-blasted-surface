@@ -8,11 +8,11 @@
 //#include <blast/oliveira_planes.hpp>
 #include <blast/voxel_grid.hpp>
 #include <spdlog/spdlog.h>
+#include <filesystem>
 // #include <spdlog/spdlog.h>
 
 using namespace meshview;
 
-std::string filename = R"(cube.ply)";
 std::unique_ptr<blast::Point_cloud> base_point_cloud = nullptr;
 size_t base_point_cloud_index = 0;
 
@@ -88,7 +88,9 @@ int main(int argc, char** argv)
 	viewer.draw_axes = true;
 	viewer.camera.dist_to_center = 5.f;
     viewer.cull_face = false;
-    
+
+	std::vector<std::string> example_files;
+    std::string selected_example_file = "knochen-komplett.pcd";
 
     viewer.on_gui = [&]() -> bool {
         bool redraw_meshes = false;
@@ -106,10 +108,30 @@ int main(int argc, char** argv)
             base_point_cloud = nullptr;
         }
 
-        ImGui::InputText("Pointcloud file", &filename);
+        // ImGui::Combo
+
+        if (ImGui::BeginCombo("Pointcloud file", selected_example_file.c_str()))
+        {
+            example_files.clear();
+            // Get all files in directory "/examples"
+            for (const auto& entry : std::filesystem::directory_iterator(R"(.\examples)"))
+            {
+                auto res = std::filesystem::path(entry.path()).filename().string();
+				example_files.push_back(res);
+
+                if (ImGui::Selectable(example_files.back().c_str(), example_files.back() == selected_example_file))
+                {
+                    selected_example_file = example_files.back();
+                }
+            }
+
+            ImGui::EndCombo();
+        }
+
+        // ImGui::InputText("Pointcloud file", &filename);
         if (ImGui::Button("Load point cloud"))
         {
-			if (!filename.empty())
+			if (!selected_example_file.empty())
 			{
                 if (base_point_cloud != nullptr)
                 {
@@ -118,13 +140,13 @@ int main(int argc, char** argv)
 
 				base_point_cloud_index = viewer.point_clouds.size();
 
-                if (filename.ends_with(".ply"))
+                if (selected_example_file.ends_with(".ply"))
                 {
-                    base_point_cloud = blast::Point_cloud::load_ply_file(filename);
+                    base_point_cloud = blast::Point_cloud::load_ply_file("./examples/" + selected_example_file);
 				}
-				else if (filename.ends_with(".pcd"))
+				else if (selected_example_file.ends_with(".pcd"))
 				{
-					base_point_cloud = blast::Point_cloud::load_pcd_file(filename);
+					base_point_cloud = blast::Point_cloud::load_pcd_file("./examples/" + selected_example_file);
 				}
 				else
 				{
