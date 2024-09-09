@@ -27,17 +27,18 @@ void shader_set_transform_matrices(const internal::Shader& shader,
 }  // namespace
 
 // *** Mesh ***
-Mesh::Mesh(size_t num_verts, size_t num_triangles) : VAO((Index)-1) {
+Mesh::Mesh(const std::string& tag, size_t num_verts, size_t num_triangles) : VAO((Index)-1), tag(tag) {
     resize(num_verts, num_triangles);
 }
 
-Mesh::Mesh(const std::string& path) { load_basic_obj(path); }
+Mesh::Mesh(const std::string& tag, const std::string& path): tag(tag) { load_basic_obj(path); }
 
-Mesh::Mesh(const Eigen::Ref<const Points>& pos,
+Mesh::Mesh(const std::string& tag,
+		   const Eigen::Ref<const Points>& pos,
            const Eigen::Ref<const Triangles>& tri_faces,
            const Eigen::Ref<const Points>& rgb,
            const Eigen::Ref<const Points>& normals)
-    : Mesh(pos.rows(), tri_faces.rows()) {
+    : Mesh(tag, pos.rows(), tri_faces.rows()) {
     if (tri_faces.rows()) faces.noalias() = tri_faces;
     verts_pos().noalias() = pos;
     if (rgb.rows()) {
@@ -51,10 +52,11 @@ Mesh::Mesh(const Eigen::Ref<const Points>& pos,
     }
 }
 
-Mesh::Mesh(const Eigen::Ref<const Points>& pos,
+Mesh::Mesh(const std::string& tag,
+		   const Eigen::Ref<const Points>& pos,
            const Eigen::Ref<const Triangles>& tri_faces, float r, float g,
            float b, const Eigen::Ref<const Points>& normals)
-    : Mesh(pos.rows(), tri_faces.rows()) {
+    : Mesh(tag, pos.rows(), tri_faces.rows()) {
     _MESHVIEW_ASSERT_LT(0, pos.rows());
     if (tri_faces.rows()) faces.noalias() = tri_faces;
     verts_pos().noalias() = pos;
@@ -276,11 +278,12 @@ void Mesh::gen_blank_texture() {
     glGenerateMipmap(GL_TEXTURE_2D);
 }
 
-Mesh Mesh::Triangle(const Eigen::Ref<const Vector3f>& a,
+Mesh Mesh::Triangle(const std::string& tag,
+				    const Eigen::Ref<const Vector3f>& a,
                     const Eigen::Ref<const Vector3f>& b,
                     const Eigen::Ref<const Vector3f>& c) {
     Vector3f n = (b - a).cross(c - b);
-    Mesh m(3);
+    Mesh m(tag, 3);
     m.data << a[0], a[1], a[2], 0.f, 0.f, 0.f, n[0], n[1], n[2], b[0], b[1],
         b[2], 0.f, 1.f, 0.f, n[0], n[1], n[2], c[0], c[1], c[2], 1.f, 1.f, 0.f,
         n[0], n[1], n[2];
@@ -288,8 +291,8 @@ Mesh Mesh::Triangle(const Eigen::Ref<const Vector3f>& a,
     return m;
 }
 
-Mesh Mesh::Square() {
-    Mesh m(4, 2);
+Mesh Mesh::Square(const std::string& tag) {
+    Mesh m(tag, 4, 2);
     m.faces << 0, 3, 1, 1, 3, 2;
     m.data << 0.5, 0.5, 0.f, 1.0f, 1.0f, 0.f, 0.0f, 0.0f, 1.0f, 0.5, -0.5, 0.f,
         1.0f, 0.0f, 0.f, 0.0f, 0.0f, 1.0f, -0.5, -0.5, 0.f, 0.0f, 0.0f, 0.f,
@@ -298,8 +301,8 @@ Mesh Mesh::Square() {
     return m;
 }
 
-Mesh Mesh::Cube() {
-    Mesh m(36);
+Mesh Mesh::Cube(const std::string& tag) {
+    Mesh m(tag, 36);
     m.data <<
         // positions         // uv coords         // normals
         // back
@@ -348,8 +351,8 @@ Mesh Mesh::Cube() {
     return m;
 }
 
-Mesh Mesh::Sphere(int rings, int sectors) {
-    Mesh m(rings * sectors, (rings - 1) * sectors * 2);
+Mesh Mesh::Sphere(const std::string& tag, int rings, int sectors) {
+    Mesh m(tag, rings * sectors, (rings - 1) * sectors * 2);
     const float R = M_PI / (float)(rings - 1);
     const float S = 2 * M_PI / (float)sectors;
     size_t vid = 0;

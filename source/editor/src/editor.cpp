@@ -27,9 +27,6 @@ std::shared_ptr<blast::Voxel_grid> safety_distance_voxel_grid;
 std::shared_ptr<blast::Voxel_grid> max_viewing_range_voxel_grid;
 std::shared_ptr<blast::Voxel_grid> via_point_voxel_grid;
 
-std::vector<Mesh*> voxel_grid_meshes;
-std::vector<size_t> voxel_grid_mesh_indices;
-
 PointCloud* voxel_grid_points;
 size_t voxel_grid_points_index = 0;
 
@@ -50,12 +47,7 @@ void update_displayed_voxel_grid(Viewer& viewer, Vector3f color = Vector3f(1.0, 
         voxel_grid_points = nullptr;
     }
 
-	for (auto mesh_it = voxel_grid_mesh_indices.rbegin(); mesh_it != voxel_grid_mesh_indices.rend(); ++mesh_it)
-	{
-		viewer.meshes.erase(viewer.meshes.begin() + *mesh_it);
-	}
-
-    voxel_grid_mesh_indices.clear();
+	viewer.delete_all("voxelgrid");
 
     auto voxels = displayed_voxel_grid->get_voxels();
     auto voxel_count = voxels.size();
@@ -73,10 +65,7 @@ void update_displayed_voxel_grid(Viewer& viewer, Vector3f color = Vector3f(1.0, 
         points.row(i)(1) = voxel_center.y();
         points.row(i)(2) = voxel_center.z();
 
-		voxel_grid_mesh_indices.push_back(viewer.meshes.size());
-        voxel_grid_meshes.push_back(
-			&viewer.add_cube(voxel_center.cast<float>(), voxel_size, color).enable(voxel_meshes_visible)
-        );
+        &viewer.add_cube("voxelgrid", voxel_center.cast<float>(), voxel_size, color).enable(voxel_meshes_visible);
     }
 
     voxel_grid_points_index = viewer.point_clouds.size();
@@ -232,7 +221,9 @@ int main(int argc, char** argv)
             // vw_normals *= -1.0f;
 
             auto& pyra2 = viewer
-                .add_mesh(vertices,
+                .add_mesh(
+                    "triangulation",
+                    vertices,
                     triangles,
                     0.f, 1.0f, 1.0f,
                     vertices)
@@ -293,7 +284,7 @@ int main(int argc, char** argv)
 
         if (ImGui::Button("Toggle voxel mesh visibility"))
         {
-			for (auto& mesh : voxel_grid_meshes)
+			/*for (auto& mesh : voxel_grid_meshes)
 			{
 				voxel_meshes_visible = !voxel_meshes_visible;
                 mesh->enable(!mesh->enabled);
@@ -301,7 +292,7 @@ int main(int argc, char** argv)
 
 			if (voxel_grid_meshes[0]->enabled) {
 				voxel_grid_points->enable(false);
-			}
+			}*/
             voxel_points_visible = false;
         }
 
@@ -311,10 +302,10 @@ int main(int argc, char** argv)
             voxel_grid_points->enable(!voxel_grid_points->enabled);
 
             if (voxel_grid_points->enabled) {
-                for (auto& mesh : voxel_grid_meshes)
+                /*for (auto& mesh : voxel_grid_meshes)
                 {
                     mesh->enable(false);
-                }
+                }*/
 				voxel_meshes_visible = false;
             }
         }
@@ -327,16 +318,18 @@ int main(int argc, char** argv)
 			auto via_points = blast::generate_via_point_candidates(*displayed_voxel_grid, candidate_amount, potential_field_max_distance);
 			spdlog::info("Generated {0:d} via points", via_points.size());
 
+            viewer.delete_all("candidates");
+
 			for (auto& via_point : via_points)
 			{
 				auto point = via_point.point;
 				auto direction = via_point.direction;
 
                 viewer.add_sphere(
-					point.cast<float>(),
-					2.0f,
-					Vector3f(1.0f, 0.0f, 0.0f)
-				);
+	                "candidates",
+	                point.cast<float>(),
+	                2.0f, Vector3f(1.0f, 0.0f, 0.0f)
+                );
 
 
 				viewer.add_line(
@@ -363,8 +356,11 @@ int main(int argc, char** argv)
 
             auto planes = oliveira_planes.execute();
             // Visualize planes
-            for (auto& plane : planes)
+            for (int i = 0; i < planes.size(); ++i)
 			{
+                auto& plane = planes[i];
+                Eigen::Vector3f normal = plane->R_* Eigen::Vector3f(0, 0, plane->extent_(2));
+
 				auto box_points = plane->get_box_points();
 				Points vertices{box_points.size(), 3};
 
@@ -389,7 +385,11 @@ int main(int argc, char** argv)
 							 4, 7, 6,
 							 4, 6, 5;
 
-				viewer.add_mesh(vertices, triangles, 1.0f, 0.0f, 0.0f);
+                if (i % 4 == 0)
+                {
+                    viewer.add_mesh("oliveira", vertices, triangles, 1.0f, 0.0f, 0.0f);
+                    viewer.add_line(plane->get_center(), plane->get_center() + (2 * normal), Eigen::Vector3f(0.0, 1.0, 0.0));
+                }
 			}
         }
             

@@ -38,7 +38,7 @@ int main(int argc, char** argv) {
         }
     }
     auto& cube =
-        viewer.add_cube()
+        viewer.add_cube(TODO)
             .translate(Vector3f(-2.f, 0.f, 0.f))
             // Diffuse texture (optional)
             .add_texture(mat, /* channels */ 3)
@@ -48,8 +48,8 @@ int main(int argc, char** argv) {
     // * Basic sphere
     auto& uv_sph =
         viewer
-            .add_sphere(Vector3f::Zero(),
-                        /* radius */ 0.5f)  // use defalt color orange
+            .add_sphere(TODO,
+                        Vector3f::Zero(), /* radius */ 0.5f)  // use defalt color orange
             .translate(Vector3f(2.f, 0.f, 0.f))
             .set_shininess(32.f);
 

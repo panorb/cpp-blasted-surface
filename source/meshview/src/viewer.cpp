@@ -372,9 +372,10 @@ void Viewer::show() {
     glfwDestroyWindow(window);
 }
 
-Mesh& Viewer::add_cube(const Eigen::Ref<const Vector3f>& cen, float side_len,
+Mesh& Viewer::add_cube(const std::string& tag, 
+					   const Eigen::Ref<const Vector3f>& cen, float side_len,
                        const Eigen::Ref<const Vector3f>& color) {
-    Mesh cube = Mesh::Cube();
+    Mesh cube = Mesh::Cube(tag);
     cube.verts_pos() *= side_len;
     cube.verts_pos().rowwise() += cen.transpose();
     return add_mesh(std::move(cube))
@@ -383,9 +384,9 @@ Mesh& Viewer::add_cube(const Eigen::Ref<const Vector3f>& cen, float side_len,
                                                       color[2]);
 }
 
-Mesh& Viewer::add_square(const Eigen::Ref<const Vector3f>& cen, float side_len,
+Mesh& Viewer::add_square(const std::string& tag, const Eigen::Ref<const Vector3f>& cen, float side_len,
                          const Eigen::Ref<const Vector3f>& color) {
-    Mesh sqr = Mesh::Square();
+    Mesh sqr = Mesh::Square(tag);
     sqr.verts_pos() *= side_len;
     sqr.verts_pos().rowwise() += cen.transpose();
     return add_mesh(std::move(sqr))
@@ -394,10 +395,10 @@ Mesh& Viewer::add_square(const Eigen::Ref<const Vector3f>& cen, float side_len,
                                                       color[2]);
 }
 
-Mesh& Viewer::add_sphere(const Eigen::Ref<const Vector3f>& cen, float radius,
+Mesh& Viewer::add_sphere(const std::string& tag, const Eigen::Ref<const Vector3f>& cen, float radius,
                          const Eigen::Ref<const Vector3f>& color, int rings,
                          int sectors) {
-    Mesh sph = Mesh::Sphere(rings, sectors);
+    Mesh sph = Mesh::Sphere(tag, rings, sectors);
     sph.verts_pos() *= radius;
     sph.verts_pos().rowwise() += cen.transpose();
     return add_mesh(std::move(sph))
@@ -411,6 +412,17 @@ PointCloud& Viewer::add_line(const Eigen::Ref<const Vector3f>& a,
                              const Eigen::Ref<const Vector3f>& b,
                              const Eigen::Ref<const Vector3f>& color) {
     return add_point_cloud(PointCloud::Line(a, b, color));
+}
+
+void Viewer::delete_all(const std::string& tag)
+{
+    for (auto mesh_it = meshes.begin(); mesh_it != meshes.end(); ++mesh_it)
+    {
+        if (mesh_it->get()->tag == tag)
+        {
+            mesh_it = meshes.erase(mesh_it);
+        }
+    }
 }
 
 }  // namespace meshview

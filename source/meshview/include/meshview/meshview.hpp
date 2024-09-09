@@ -148,15 +148,16 @@ class Mesh {
     };
 
     // Construct uninitialized mesh with given number of vertices, triangles
-    explicit Mesh(size_t num_verts = 0, size_t num_triangles = 0);
+    explicit Mesh(const std::string& tag, size_t num_verts = 0, size_t num_triangles = 0);
     // Construct from basic OBJ (see load_basic_obj)
-    explicit Mesh(const std::string& path);
+    explicit Mesh(const std::string& tag, const std::string& path);
     // Construct with given points, faces, and (optionally) color data
     // faces: triangles. if not specified, assumes they are 0 1 2, 3 4 5 etc
     // rgb: optional per-vertex color (ignored if you call set_tex_coords later)
     // normals: normal vectors per point.
     // if not specified, will compute automatically on update
-    explicit Mesh(const Eigen::Ref<const Points>& pos,
+    explicit Mesh(const std::string& tag,
+				  const Eigen::Ref<const Points>& pos,
                   const Eigen::Ref<const Triangles>& tri_faces,
                   const Eigen::Ref<const Points>& rgb,
                   const Eigen::Ref<const Points>& normals = Points());
@@ -164,7 +165,8 @@ class Mesh {
     // vertices r,g,b: the color given to all vertices (ignored if you call
     // set_tex_coords later) normals: normal vectors per point. if not
     // specified, will compute automatically on update
-    explicit Mesh(const Eigen::Ref<const Points>& pos,
+    explicit Mesh(const std::string& tag,
+				  const Eigen::Ref<const Points>& pos,
                   const Eigen::Ref<const Triangles>& tri_faces = Triangles(),
                   float r = 1.f, float g = 1.f, float b = 1.f,
                   const Eigen::Ref<const Points>& normals = Points());
@@ -250,17 +252,19 @@ class Mesh {
 
     // * Example meshes
     // Triangle
-    static Mesh Triangle(const Eigen::Ref<const Vector3f>& a,
-                         const Eigen::Ref<const Vector3f>& b,
-                         const Eigen::Ref<const Vector3f>& c);
+    static Mesh Triangle(const std::string& tag,
+                         const Eigen::Ref<const Vector3f>& a,
+                         const Eigen::Ref<const Vector3f>& b, const Eigen::Ref<const Vector3f>& c);
     // Square centered at 0,0,0 with normal in z direction and side length 1
-    static Mesh Square();
+    static Mesh Square(const std::string& tag);
 
     // Cube centered at 0,0,0 with side length 1
-    static Mesh Cube();
+    static Mesh Cube(const std::string& tag);
 
     // UV sphere centered at 0,0,0 with radius 1
-    static Mesh Sphere(int rings = 30, int sectors = 30);
+    static Mesh Sphere(const std::string& tag, int rings = 30, int sectors = 30);
+
+    const std::string tag;
 
     // Shape (num_verts, 9)
     // 3 x vertex position
@@ -438,28 +442,28 @@ class Viewer {
     // Add a cube centered at cen with given side length.
     // Mesh will have identity transform (points are moved physically in the
     // mesh)
-    Mesh& add_cube(const Eigen::Ref<const Vector3f>& cen = Vector3f(0.f, 0.f,
+    Mesh& add_cube(const std::string& tag,
+                   const Eigen::Ref<const Vector3f>& cen = Vector3f(0.f, 0.f,
                                                                     0.f),
-                   float side_len = 1.0f,
-                   const Eigen::Ref<const Vector3f>& color = Vector3f(1.f, 0.5f,
-                                                                      0.f));
+                   float side_len = 1.0f, const Eigen::Ref<const Vector3f>& color = Vector3f(1.f, 0.5f,
+	                   0.f));
 
     // Add a square centered at cen with given side length, normal to the
     // +z-axis. Mesh will have identity transform (points are moved physically
     // in the mesh)
     Mesh& add_square(
-        const Eigen::Ref<const Vector3f>& cen = Vector3f(0.f, 0.f, 0.f),
-        float side_len = 1.0f,
-        const Eigen::Ref<const Vector3f>& color = Vector3f(1.f, 0.5f, 0.f));
+	    const std::string& tag,
+	    const Eigen::Ref<const Vector3f>& cen = Vector3f(0.f, 0.f, 0.f),
+	    float side_len = 1.0f, const Eigen::Ref<const Vector3f>& color = Vector3f(1.f, 0.5f, 0.f));
 
     // Add a UV sphere centered at cen with given radius.
     // Mesh will have identity transform (points are moved physically in the
     // mesh)
     Mesh& add_sphere(
-        const Eigen::Ref<const Vector3f>& cen = Vector3f(0.f, 0.f, 0.f),
-        float radius = 1.0f,
-        const Eigen::Ref<const Vector3f>& color = Vector3f(1.f, 0.5f, 0.f),
-        int rings = 30, int sectors = 30);
+	    const std::string& tag,
+	    const Eigen::Ref<const Vector3f>& cen = Vector3f(0.f, 0.f, 0.f),
+	    float radius = 1.0f,
+	    const Eigen::Ref<const Vector3f>& color = Vector3f(1.f, 0.5f, 0.f), int rings = 30, int sectors = 30);
 
     // Add a line (PointCloud with line rendering).
     // Point cloud will have identity transform (not translated or scaled)
@@ -467,6 +471,7 @@ class Viewer {
         const Eigen::Ref<const Vector3f>& a,
         const Eigen::Ref<const Vector3f>& b,
         const Eigen::Ref<const Vector3f>& color = Vector3f(1.f, 1.f, 1.f));
+    void delete_all(const std::string& tag);
 
     // * The meshes
     std::vector<std::unique_ptr<Mesh>> meshes;

@@ -63,7 +63,7 @@ std::shared_ptr<Oriented_bounding_box> Plane_detector::delimit_plane() {
         std::make_shared<Oriented_bounding_box>();
     obox->center_ = patch_->center_;
     obox->R_ = rect.B;
-    obox->extent_ = Eigen::Vector3f(width, height, 0.001);
+    obox->extent_ = Eigen::Vector3f(width, height, depth);
     return obox;
 }
 
