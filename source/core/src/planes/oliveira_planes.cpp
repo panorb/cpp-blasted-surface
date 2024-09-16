@@ -25,8 +25,8 @@ const std::vector<std::shared_ptr<Oriented_bounding_box>> Oliveira_plane_segment
 		min_plane_edge_length_ = 0.01 * (max_bound.getVector3fMap() - min_bound.getVector3fMap()).maxCoeff();
 	}
 
-	spdlog::info("min_bound: %f, %f, %f", min_bound.x, min_bound.y, min_bound.z);
-	spdlog::info("max_bound: %f, %f, %f", max_bound.x, max_bound.y, max_bound.z);
+	spdlog::info("min_bound: {0:f}, {1:f}, {2:f}", min_bound.x, min_bound.y, min_bound.z);
+	spdlog::info("max_bound: {0:f}, {1:f}, {2:f}", max_bound.x, max_bound.y, max_bound.z);
 
 	if (min_num_points_ == 0) {
 		

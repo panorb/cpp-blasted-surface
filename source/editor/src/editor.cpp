@@ -13,6 +13,8 @@
 
 #include <blast/planes/oliveira_planes.hpp>
 
+#include "blast/sampler/grid_sampler.hpp"
+
 using namespace meshview;
 
 std::unique_ptr<blast::Point_cloud> base_point_cloud = nullptr;
@@ -81,6 +83,7 @@ int main(int argc, char** argv)
 
 	std::vector<std::string> example_files;
     std::string selected_example_file = "knochen-komplett.pcd";
+    std::vector<std::shared_ptr<Oriented_bounding_box>> found_planes;
 
     viewer.on_gui = [&]() -> bool {
         bool redraw_meshes = false;
@@ -94,8 +97,8 @@ int main(int argc, char** argv)
         if (ImGui::Button("Clear all"))
         {
 	        viewer.meshes.clear();
-            viewer.point_clouds.clear();
-            base_point_cloud = nullptr;
+            // viewer.point_clouds.clear();
+            // base_point_cloud = nullptr;
         }
 
         // ImGui::Combo
@@ -354,11 +357,11 @@ int main(int argc, char** argv)
 
             oliveira_planes.from_arrays(points, normals);
 
-            auto planes = oliveira_planes.execute();
+            found_planes = oliveira_planes.execute();
             // Visualize planes
-            for (int i = 0; i < planes.size(); ++i)
+            for (int i = 0; i < found_planes.size(); ++i)
 			{
-                auto& plane = planes[i];
+                auto& plane = found_planes[i];
                 Eigen::Vector3f normal = plane->R_* Eigen::Vector3f(0, 0, plane->extent_(2));
 
 				auto box_points = plane->get_box_points();
@@ -385,11 +388,44 @@ int main(int argc, char** argv)
 							 4, 7, 6,
 							 4, 6, 5;
 
+
+                float r = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+                float g = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+                float b = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+				plane->color_ = Eigen::Vector3f(r, g, b);
+
                 if (i % 4 == 0)
                 {
-                    viewer.add_mesh("oliveira", vertices, triangles, 1.0f, 0.0f, 0.0f);
+
+                    viewer.add_mesh("oliveira", vertices, triangles, r, g, b);
                     viewer.add_line(plane->get_center(), plane->get_center() + (2 * normal), Eigen::Vector3f(0.0, 1.0, 0.0));
                 }
+			}
+        }
+
+        if (ImGui::Button("Planes: Generate Grid Points"))
+        {
+			for (int i = 0; i < found_planes.size(); ++i)
+			{
+                if (i % 4 == 0)
+                {
+                    auto& plane = found_planes[i];
+                    auto sample_points = sample_points_on_grid(plane, 4.0);
+
+                    size_t point_count = sample_points.size();
+                    Points points{ point_count, 3 };
+
+                    for (size_t i = 0; i < point_count; ++i)
+                    {
+                        points.row(i)(0) = sample_points[i][0];
+                        points.row(i)(1) = sample_points[i][1];
+                        points.row(i)(2) = sample_points[i][2];
+                    }
+
+                    viewer.add_point_cloud(points, std::min(plane->color_.x() + 0.2f, 1.0f), plane->color_.y(), plane->color_.z());
+                    redraw_meshes = true;
+                }
+				
 			}
         }
             
