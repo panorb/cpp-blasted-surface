@@ -45,6 +45,11 @@ bool voxel_meshes_visible = true;
 bool voxel_points_visible = false;
 
 
+bool is_overlapping(Eigen::Vector3f p1, std::vector<Eigen::Vector3f> inbetween_points, Eigen::Vector3f p2)
+{
+    return false;
+}
+
 void update_displayed_voxel_grid(Viewer& viewer, Vector3f color = Vector3f(1.0, 0.8, 0.8))
 {
     if (voxel_grid_points != nullptr)
@@ -102,8 +107,8 @@ int main(int argc, char** argv)
         if (ImGui::Button("Clear all"))
         {
 	        viewer.meshes.clear();
-            // viewer.point_clouds.clear();
-            // base_point_cloud = nullptr;
+            viewer.point_clouds.clear();
+            base_point_cloud = nullptr;
         }
 
         // ImGui::Combo
@@ -417,7 +422,7 @@ int main(int argc, char** argv)
 			for (int i = 0; i < detected_planes.size(); ++i)
 			{
                 auto& plane = detected_planes[i];
-                plane.sample_points = sample_points_on_grid(plane, 4.0, 8.0);
+                plane.sample_points = sample_points_on_grid(plane, 10.0, 8.0);
                 // plane._sample_points = sample_points
                         
                 size_t point_count = plane.sample_points.size();
@@ -435,7 +440,7 @@ int main(int argc, char** argv)
 			}
         }
 
-        if (ImGui::Button("Optimize local paths using Ant Colony Optimizer"))
+        if (ImGui::Button("Optimize local paths"))
         {
 			for (int i = 0; i < detected_planes.size(); ++i)
 			{
@@ -487,17 +492,16 @@ int main(int argc, char** argv)
 					auto& point2 = plane.sample_points[path[j + 1]];
 
                     // Add sphere for point1
-					viewer.add_sphere(
+					/*viewer.add_sphere(
 						"path",
 						point1.cast<float>(),
 						0.4f, Eigen::Vector3f(1.0f, 0.0f, 0.0f)
-					);
+					);*/
                     viewer.add_line(point1.cast<float>(), point2.cast<float>(), Eigen::Vector3f(1.0, 0.0, 0.0));
 				}
 
 				spdlog::info("Path: {0}", r);
                 redraw_meshes = true;
-                break;
 			}
         }
 
@@ -542,10 +546,49 @@ int main(int argc, char** argv)
 					plane1.bbox->get_center().cast<float>(),
 					2.0f, Eigen::Vector3f(1.0f, 0.0f, 0.0f)
 				);
-				viewer.add_line(plane1.bbox->get_center().cast<float>(), plane2.bbox->get_center().cast<float>(), Eigen::Vector3f(1.0, 0.0, 0.0));
+
+				auto start_point = plane1.bbox->get_center().cast<float>();
+				auto end_point = plane2.bbox->get_center().cast<float>();
+
+				std::vector<Eigen::Vector3f> inbetween_points;
+
+				//while (is_overlapping(p1, inbetween_points, p2))
+				//{
+				// Add more points
+                inbetween_points.push_back(start_point + (end_point - start_point) * 0.25f + 8.0f * plane1.normal);
+				inbetween_points.push_back(start_point + (end_point - start_point) * 0.75f + 8.0f * plane2.normal);
+				//}
+
+                std::vector<Eigen::Vector3f> all_points;
+                all_points.push_back(start_point);
+
+                // All points from inbetween_points
+				for (auto& point : inbetween_points)
+				{
+					all_points.push_back(point);
+				}
+
+				all_points.push_back(end_point);
+
+
+				// Draw lines
+				for (int i = 0; i < all_points.size() - 1; ++i)
+				{
+					viewer.add_line(all_points[i], all_points[i + 1], Eigen::Vector3f(1.0, 0.0, 0.0));
+                    viewer.add_sphere(
+                        "path",
+                        all_points[i],
+                        0.4f, Eigen::Vector3f(1.0f, 0.0f, 0.0f)
+                    );
+				}
 			}
 
 			redraw_meshes = true;
+        }
+
+        if (ImGui::Button("Combine paths"))
+        {
+	        
         }
             
         ImGui::End();
