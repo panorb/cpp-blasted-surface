@@ -13,6 +13,10 @@
 
 #include <blast/planes/oliveira_planes.hpp>
 
+#include "blast/ant_colony_optimizer.hpp"
+#include "blast/detected_plane_segment.hpp"
+#include "blast/graph.hpp"
+#include "blast/greedy_optimizer.hpp"
 #include "blast/sampler/grid_sampler.hpp"
 
 using namespace meshview;
@@ -83,7 +87,8 @@ int main(int argc, char** argv)
 
 	std::vector<std::string> example_files;
     std::string selected_example_file = "knochen-komplett.pcd";
-    std::vector<std::shared_ptr<Oriented_bounding_box>> found_planes;
+    // std::vector<std::shared_ptr<Oriented_bounding_box>> found_planes;
+	std::vector<Detected_plane_segment> detected_planes;
 
     viewer.on_gui = [&]() -> bool {
         bool redraw_meshes = false;
@@ -157,7 +162,7 @@ int main(int argc, char** argv)
                     points.row(i)(2) = base_point_cloud->get_points()[i][2];
 				}
 
-                viewer.add_point_cloud(points, 0.f, 1.0f, 1.0f);
+                // viewer.add_point_cloud(points, 0.f, 1.0f, 1.0f);
                 redraw_meshes = true;
 			}
 	        
@@ -357,12 +362,16 @@ int main(int argc, char** argv)
 
             oliveira_planes.from_arrays(points, normals);
 
-            found_planes = oliveira_planes.execute();
+            auto planes = oliveira_planes.execute();
             // Visualize planes
-            for (int i = 0; i < found_planes.size(); ++i)
+            for (int i = 0; i < planes.size(); ++i)
 			{
-                auto& plane = found_planes[i];
+                auto& plane = planes[i];
                 Eigen::Vector3f normal = plane->R_* Eigen::Vector3f(0, 0, plane->extent_(2));
+                normal.normalize();
+
+                // Add to detected planes vector
+				detected_planes.push_back(Detected_plane_segment(plane, normal, {}));
 
 				auto box_points = plane->get_box_points();
 				Points vertices{box_points.size(), 3};
@@ -403,30 +412,140 @@ int main(int argc, char** argv)
 			}
         }
 
-        if (ImGui::Button("Planes: Generate Grid Points"))
+        if (ImGui::Button("Planes: Sample points on grid"))
         {
-			for (int i = 0; i < found_planes.size(); ++i)
+			for (int i = 0; i < detected_planes.size(); ++i)
 			{
-                if (i % 4 == 0)
+                auto& plane = detected_planes[i];
+                plane.sample_points = sample_points_on_grid(plane, 4.0, 8.0);
+                // plane._sample_points = sample_points
+                        
+                size_t point_count = plane.sample_points.size();
+                Points points{ point_count, 3 };
+
+                for (size_t i = 0; i < point_count; ++i)
                 {
-                    auto& plane = found_planes[i];
-                    auto sample_points = sample_points_on_grid(plane, 4.0);
-
-                    size_t point_count = sample_points.size();
-                    Points points{ point_count, 3 };
-
-                    for (size_t i = 0; i < point_count; ++i)
-                    {
-                        points.row(i)(0) = sample_points[i][0];
-                        points.row(i)(1) = sample_points[i][1];
-                        points.row(i)(2) = sample_points[i][2];
-                    }
-
-                    viewer.add_point_cloud(points, std::min(plane->color_.x() + 0.2f, 1.0f), plane->color_.y(), plane->color_.z());
-                    redraw_meshes = true;
+                    points.row(i)(0) = plane.sample_points[i][0];
+                    points.row(i)(1) = plane.sample_points[i][1];
+                    points.row(i)(2) = plane.sample_points[i][2];
                 }
-				
+
+                viewer.add_point_cloud(points, std::min(plane.bbox->color_.x() + 0.2f, 1.0f), plane.bbox->color_.y(), plane.bbox->color_.z());
+                redraw_meshes = true;
 			}
+        }
+
+        if (ImGui::Button("Optimize local paths using Ant Colony Optimizer"))
+        {
+			for (int i = 0; i < detected_planes.size(); ++i)
+			{
+                blast::Graph graph;
+				auto& plane = detected_planes[i];
+
+				// Add sample points to graph
+                for (int j = 0; j < plane.sample_points.size(); ++j)
+                {
+                    auto& point = plane.sample_points[j];
+                    graph.add_node(std::make_shared<blast::Node>(std::format("P{}S{}", i, j)));
+                }
+
+				// Add edges to graph
+				for (int j = 0; j < plane.sample_points.size(); ++j)
+				{
+					for (int k = 0; k < plane.sample_points.size(); ++k)
+					{
+						if (j != k && !graph.exists_edge(j, k))
+						{
+							auto& point1 = plane.sample_points[j];
+							auto& point2 = plane.sample_points[k];
+							auto distance = (point1 - point2).norm();
+                            graph.add_undirected_edge(j, k, distance);
+						}
+					}
+				}
+
+				// Optimize graph
+				// blast::Ant_colony_optimizer ant_colony_optimizer{&graph, 8, 100};
+                // std::vector<size_t> path = ant_colony_optimizer.execute_iterations(100);
+                blast::Greedy_optimizer greedy_optimizer{ &graph };
+				std::vector<size_t> path = greedy_optimizer.execute();
+
+                std::string r = "";
+
+                for (auto& node : path)
+                {
+                    r += std::format("{0:d} -> ", node);
+                }
+
+				// Remove last arrow
+				r = r.substr(0, r.size() - 4);
+
+                // Draw path
+				for (int j = 0; j < path.size() - 1; ++j)
+				{
+					auto& point1 = plane.sample_points[path[j]];
+					auto& point2 = plane.sample_points[path[j + 1]];
+
+                    // Add sphere for point1
+					viewer.add_sphere(
+						"path",
+						point1.cast<float>(),
+						0.4f, Eigen::Vector3f(1.0f, 0.0f, 0.0f)
+					);
+                    viewer.add_line(point1.cast<float>(), point2.cast<float>(), Eigen::Vector3f(1.0, 0.0, 0.0));
+				}
+
+				spdlog::info("Path: {0}", r);
+                redraw_meshes = true;
+                break;
+			}
+        }
+
+        // Optimize global paths
+        if (ImGui::Button("Optimize global paths"))
+        {
+            blast::Graph graph;
+
+            for (int i = 0; i < detected_planes.size(); ++i)
+            {
+				graph.add_node(std::make_shared<blast::Node>(std::format("P{}", i)));
+            }
+
+			for (int i = 0; i < detected_planes.size(); ++i)
+			{
+				for (int j = 0; j < detected_planes.size(); ++j)
+				{
+					if (i != j && !graph.exists_edge(i, j))
+					{
+						auto& plane1 = detected_planes[i];
+						auto& plane2 = detected_planes[j];
+						auto distance = (plane1.bbox->get_center() - plane2.bbox->get_center()).norm();
+						graph.add_undirected_edge(i, j, distance);
+					}
+				}
+			}
+
+			// Optimize graph
+			blast::Greedy_optimizer greedy_optimizer{ &graph };
+
+
+			// Draw path
+			auto path = greedy_optimizer.execute();
+			for (int i = 0; i < path.size() - 1; ++i)
+			{
+				auto& plane1 = detected_planes[path[i]];
+				auto& plane2 = detected_planes[path[i + 1]];
+
+				// Add sphere for point1
+				viewer.add_sphere(
+					"path",
+					plane1.bbox->get_center().cast<float>(),
+					2.0f, Eigen::Vector3f(1.0f, 0.0f, 0.0f)
+				);
+				viewer.add_line(plane1.bbox->get_center().cast<float>(), plane2.bbox->get_center().cast<float>(), Eigen::Vector3f(1.0, 0.0, 0.0));
+			}
+
+			redraw_meshes = true;
         }
             
         ImGui::End();
