@@ -475,6 +475,7 @@ int main(int argc, char** argv)
                 blast::Greedy_optimizer greedy_optimizer{ &graph };
 				std::vector<size_t> path = greedy_optimizer.execute();
 
+				// Prepare outputting resulting path index sequence e.g. 0 -> 1 -> 2 -> 3
                 std::string r = "";
 
                 for (auto& node : path)
@@ -482,25 +483,19 @@ int main(int argc, char** argv)
                     r += std::format("{0:d} -> ", node);
                 }
 
-				// Remove last arrow
+				// Remove last arrow from output string
 				r = r.substr(0, r.size() - 4);
+				spdlog::info("Path: {0}", r);
 
-                // Draw path
+				// Draw path in viewer
 				for (int j = 0; j < path.size() - 1; ++j)
 				{
 					auto& point1 = plane.sample_points[path[j]];
 					auto& point2 = plane.sample_points[path[j + 1]];
 
-                    // Add sphere for point1
-					/*viewer.add_sphere(
-						"path",
-						point1.cast<float>(),
-						0.4f, Eigen::Vector3f(1.0f, 0.0f, 0.0f)
-					);*/
                     viewer.add_line(point1.cast<float>(), point2.cast<float>(), Eigen::Vector3f(1.0, 0.0, 0.0));
 				}
 
-				spdlog::info("Path: {0}", r);
                 redraw_meshes = true;
 			}
         }
@@ -571,7 +566,7 @@ int main(int argc, char** argv)
 				all_points.push_back(end_point);
 
 
-				// Draw lines
+				// Draw lines in viewer
 				for (int i = 0; i < all_points.size() - 1; ++i)
 				{
 					viewer.add_line(all_points[i], all_points[i + 1], Eigen::Vector3f(1.0, 0.0, 0.0));
@@ -590,7 +585,7 @@ int main(int argc, char** argv)
         {
 	        
         }
-            
+
         ImGui::End();
 
         return redraw_meshes;  // True to update all meshes and camera
