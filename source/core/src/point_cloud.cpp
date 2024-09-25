@@ -41,6 +41,19 @@ const std::vector<Eigen::Vector3d>& blast::Point_cloud::get_points() const
 	return points;
 }
 
+const std::vector<Eigen::Vector3f> blast::Point_cloud::get_points_f() const
+{
+	// Convert the points to float
+	static std::vector<Eigen::Vector3f> points_f;
+	points_f.clear();
+	points_f.reserve(points.size());
+	for (const auto& pnt : points)
+	{
+		points_f.emplace_back(pnt.x(), pnt.y(), pnt.z());
+	}
+	return points_f;
+}
+
 std::unique_ptr<blast::Point_cloud> from_pcl_point_cloud(const pcl::PointCloud<pcl::PointXYZ>& pcl_cloud)
 {
 	std::vector<Eigen::Vector3d> points;

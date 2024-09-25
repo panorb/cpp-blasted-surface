@@ -5,7 +5,7 @@
 std::vector<Eigen::Vector3f> sample_points_on_grid(Detected_plane_segment& plane, float grid_size, float distance_along_normal)
 {
 	auto bbox = plane.bbox;
-	Eigen::Vector3f normal = bbox->R_ * Eigen::Vector3f(0, 0, bbox->extent_(2));
+	Eigen::Vector3f normal = plane.normal;
 	normal.normalize();
 
 	Eigen::Vector3f x_axis = bbox->R_ * Eigen::Vector3f(1, 0, 0);
@@ -33,7 +33,7 @@ std::vector<Eigen::Vector3f> sample_points_on_grid(Detected_plane_segment& plane
 			Eigen::Vector3f point = origin + i * grid_size * x_axis_unit + j * grid_size * y_axis_unit + distance_along_normal * z_axis_unit;
 			sample_points.push_back(point);
 			// bbox->sample_points_.push_back(point);
-			spdlog::info("grid point: {0}, {1}, {2}", point(0), point(1), point(2));
+			// spdlog::info("grid point: {0}, {1}, {2}", point(0), point(1), point(2));
 		}
 	}
 

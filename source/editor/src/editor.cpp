@@ -408,12 +408,9 @@ int main(int argc, char** argv)
                 float b = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
 				plane->color_ = Eigen::Vector3f(r, g, b);
 
-                if (i % 4 == 0)
-                {
-
-                    viewer.add_mesh("oliveira", vertices, triangles, r, g, b);
-                    viewer.add_line(plane->get_center(), plane->get_center() + (2 * normal), Eigen::Vector3f(0.0, 1.0, 0.0));
-                }
+                viewer.add_mesh("oliveira", vertices, triangles, r, g, b);
+            	// viewer.add_line(plane->get_center(), plane->get_center() + (2 * normal), Eigen::Vector3f(0.0, 1.0, 0.0));
+                
 			}
         }
 
@@ -422,7 +419,57 @@ int main(int argc, char** argv)
 			for (int i = 0; i < detected_planes.size(); ++i)
 			{
                 auto& plane = detected_planes[i];
-                plane.sample_points = sample_points_on_grid(plane, 10.0, 8.0);
+                auto pt_indices = plane.bbox->get_point_indices_within_bounding_box(base_point_cloud->get_points_f());
+
+				// log all indices
+				std::string indices = "";
+				for (auto& idx : pt_indices)
+				{
+					indices += std::format("{0:d}, ", idx);
+				}
+
+				// Remove last comma
+				indices = indices.substr(0, indices.size() - 2);
+
+                // Look which side of the plane has more of the points
+				Eigen::Vector3f normal = plane.bbox->R_ * Eigen::Vector3f(0, 0, plane.bbox->extent_(2));
+
+				// Count points on each side of the plane
+				int left = 0;
+				int right = 0;
+
+				for (auto& idx : pt_indices)
+				{
+					auto& point = base_point_cloud->get_points()[idx];
+					auto d = point - plane.bbox->center_.cast<double>();
+					auto dot = d.dot(normal.cast<double>());
+
+					if (dot > 0)
+					{
+						right++;
+					}
+					else
+					{
+						left++;
+					}
+				}
+
+				if (left > right)
+				{
+					plane.normal = -normal.normalized();
+				}
+				else
+				{
+					plane.normal = normal.normalized();
+				}
+
+                viewer.add_line(plane.bbox->get_center(), plane.bbox->get_center() + (5 * plane.normal), Eigen::Vector3f(0.0, 1.0, 0.0));
+
+                spdlog::info("----------------------------");
+				spdlog::info("Right: {0}", right);
+				spdlog::info("Left: {0}", left);
+
+                plane.sample_points = sample_points_on_grid(plane, 10.0, 30.0);
                 // plane._sample_points = sample_points
                         
                 size_t point_count = plane.sample_points.size();
@@ -435,7 +482,7 @@ int main(int argc, char** argv)
                     points.row(i)(2) = plane.sample_points[i][2];
                 }
 
-                viewer.add_point_cloud(points, std::min(plane.bbox->color_.x() + 0.2f, 1.0f), plane.bbox->color_.y(), plane.bbox->color_.z());
+                // viewer.add_point_cloud(points, std::min(plane.bbox->color_.x() + 0.2f, 1.0f), plane.bbox->color_.y(), plane.bbox->color_.z());
                 redraw_meshes = true;
 			}
         }
