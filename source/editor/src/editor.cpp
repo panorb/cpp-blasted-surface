@@ -3,6 +3,9 @@
 #include <Eigen/Core>
 #include "Eigen/Geometry"
 
+#include <CGAL/Polyhedron_3.h>
+#include <CGAL/extract_mean_curvature_flow_skeleton.h>
+
 // Eigene Includes
 #include <blast/point_cloud.hpp>
 //#include <blast/oliveira_planes.hpp>
@@ -18,6 +21,9 @@
 #include "blast/graph.hpp"
 #include "blast/greedy_optimizer.hpp"
 #include "blast/sampler/grid_sampler.hpp"
+#include <pcl/io/pcd_io.h>
+#include <pcl/io/ply_io.h>
+#include <pcl/surface/poisson.h>
 
 using namespace meshview;
 
@@ -487,6 +493,45 @@ int main(int argc, char** argv)
 			}
         }
 
+        if (ImGui::Button("CGAL: Triangulated Surface Mesh Skeletonization"))
+        {
+            // CGAL::extract_mean_curvature_flow_skeleton();
+
+            pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
+            if (pcl::io::loadPCDFile<pcl::PointXYZ>("input.pcd", *cloud) == -1) // Load point cloud
+            {
+                PCL_ERROR("Couldn't read file input.pcd \n");
+                return (-1);
+            }
+
+            // Normal estimation (optional but recommended)
+            pcl::NormalEstimation<pcl::PointXYZ, pcl::Normal> n;
+            pcl::PointCloud<pcl::Normal>::Ptr normals(new pcl::PointCloud<pcl::Normal>);
+            pcl::search::KdTree<pcl::PointXYZ>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZ>);
+            tree->setInputCloud(cloud);
+            n.setInputCloud(cloud);
+            n.setSearchMethod(tree);
+            n.setKSearch(20);
+            n.compute(*normals);
+
+            // Combine points and normals
+            pcl::PointCloud<pcl::PointNormal>::Ptr cloud_with_normals(new pcl::PointCloud<pcl::PointNormal>);
+            pcl::concatenateFields(*cloud, *normals, *cloud_with_normals);
+
+            // Create search tree
+            pcl::search::KdTree<pcl::PointNormal>::Ptr tree2(new pcl::search::KdTree<pcl::PointNormal>);
+            tree2->setInputCloud(cloud_with_normals);
+
+            // Poisson reconstruction
+            pcl::Poisson<pcl::PointNormal> poisson;
+            poisson.setDepth(8); // Set parameters as required
+            poisson.setInputCloud(cloud_with_normals);
+            pcl::PolygonMesh mesh;
+            poisson.reconstruct(mesh);
+
+            pcl::io::savePLYFile("mesh.ply", mesh);
+        }
+
         if (ImGui::Button("Optimize local paths"))
         {
 			for (int i = 0; i < detected_planes.size(); ++i)
@@ -630,6 +675,7 @@ int main(int argc, char** argv)
 
         if (ImGui::Button("Combine paths"))
         {
+
 	        
         }
 

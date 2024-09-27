@@ -15,6 +15,7 @@ find_package(glfw3 CONFIG REQUIRED)
 find_package(GLEW CONFIG REQUIRED)
 find_package(Eigen3 CONFIG REQUIRED)
 find_package(imgui CONFIG REQUIRED)
+find_package(CGAL CONFIG REQUIRED)
 
 include_directories(${PCL_INCLUDE_DIRS})
 link_directories(${PCL_LIBRARY_DIRS})
@@ -26,4 +27,5 @@ add_subdirectory(core)
 add_subdirectory(visualizer)
 add_subdirectory(meshview)
 add_subdirectory(editor)
+add_subdirectory(playground)
 

@@ -3,7 +3,7 @@ set(plane_segmenter_source src/planes/boundary_volume_hierarchy.cpp src/planes/b
 
 add_library(Core include/blast/graph.hpp src/graph.cpp include/blast/node.hpp src/node.cpp include/blast/point_cloud.hpp src/point_cloud.cpp include/blast/optimizer_strategy.hpp include/blast/ant_colony_optimizer.hpp src/ant_colony_optimizer.cpp include/blast/greedy_optimizer.hpp src/greedy_optimizer.cpp include/blast/triangulation.hpp src/triangulation.cpp include/blast/voxel_grid.hpp src/voxel_grid.cpp include/blast/utility.hpp ${plane_segmenter_headers} ${plane_segmenter_source})
 target_include_directories(Core PUBLIC include)
-target_link_libraries(Core PUBLIC spdlog::spdlog Eigen3::Eigen)
+target_link_libraries(Core PUBLIC spdlog::spdlog Eigen3::Eigen CGAL::CGAL)
 target_link_libraries(Core PRIVATE ${PCL_LIBRARIES} Qhull::qhullcpp)
 
 # Source groups
