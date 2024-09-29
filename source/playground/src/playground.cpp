@@ -15,6 +15,8 @@
 #include <CGAL/Polygon_mesh_processing/measure.h> // For is_closed
 
 #include <fstream>
+#include <pcl/filters/voxel_grid.h>
+#include <pcl/surface/gp3.h>
 #include <spdlog/spdlog.h>
 
 #include "meshview/meshview.hpp"
@@ -38,48 +40,77 @@ namespace PMP = CGAL::Polygon_mesh_processing;
 
 int main(int argc, char** argv)
 {
-    std::cout << "Loading input point cloud..." << std::endl;
+ //   std::cout << "Loading input point cloud..." << std::endl;
 
-    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
-    if (pcl::io::loadPCDFile<pcl::PointXYZ>("input.pcd", *cloud) == -1) // Load point cloud
-    {
-        PCL_ERROR("Couldn't read file input.pcd \n");
-        return (-1);
-    }
+ //   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
+ //   if (pcl::io::loadPCDFile<pcl::PointXYZ>("input.pcd", *cloud) == -1) // Load point cloud
+ //   {
+ //       PCL_ERROR("Couldn't read file input.pcd \n");
+ //       return (-1);
+ //   }
 
-    std::cout << "Estimating normals..." << std::endl;
+	//std::cout << "Loaded " << cloud->width * cloud->height << " data points from input.pcd" << std::endl;
+	//std::cout << "Voxel grid downsampling..." << std::endl;
+ //   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_filtered(new pcl::PointCloud<pcl::PointXYZ>);
 
-    // Normal estimation (optional but recommended)
-    pcl::NormalEstimation<pcl::PointXYZ, pcl::Normal> n;
-    pcl::PointCloud<pcl::Normal>::Ptr normals(new pcl::PointCloud<pcl::Normal>);
-    pcl::search::KdTree<pcl::PointXYZ>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZ>);
-    tree->setInputCloud(cloud);
-    n.setInputCloud(cloud);
-    n.setSearchMethod(tree);
-    n.setKSearch(20);
-    n.compute(*normals);
+ //   // Call the PCL function
+ //   pcl::VoxelGrid<pcl::PointXYZ> vox;
+ //   vox.setInputCloud(cloud);
+ //   vox.setLeafSize(3.0f, 3.0f, 3.0f);
+ //   vox.filter(*cloud_filtered);
 
-    // Combine points and normals
-    pcl::PointCloud<pcl::PointNormal>::Ptr cloud_with_normals(new pcl::PointCloud<pcl::PointNormal>);
-    pcl::concatenateFields(*cloud, *normals, *cloud_with_normals);
+ //   std::cout << "Estimating normals..." << std::endl;
 
-    // Create search tree
-    pcl::search::KdTree<pcl::PointNormal>::Ptr tree2(new pcl::search::KdTree<pcl::PointNormal>);
-    tree2->setInputCloud(cloud_with_normals);
+ //   // Normal estimation (optional but recommended)
+ //   pcl::NormalEstimation<pcl::PointXYZ, pcl::Normal> n;
+ //   pcl::PointCloud<pcl::Normal>::Ptr normals(new pcl::PointCloud<pcl::Normal>);
+ //   pcl::search::KdTree<pcl::PointXYZ>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZ>);
+ //   tree->setInputCloud(cloud_filtered);
+ //   n.setInputCloud(cloud_filtered);
+ //   n.setSearchMethod(tree);
+ //   n.setKSearch(20);
+ //   n.compute(*normals);
 
-    std::cout << "Poisson reconstruction..." << std::endl;
+ //   // Combine points and normals
+ //   pcl::PointCloud<pcl::PointNormal>::Ptr cloud_with_normals(new pcl::PointCloud<pcl::PointNormal>);
+ //   pcl::concatenateFields(*cloud_filtered, *normals, *cloud_with_normals);
 
-    // Poisson reconstruction
-    pcl::Poisson<pcl::PointNormal> poisson;
-    poisson.setDepth(8); // Set parameters as required
-    poisson.setInputCloud(cloud_with_normals);
-    pcl::PolygonMesh pcl_mesh;
-    poisson.reconstruct(pcl_mesh);
+ //   // Create search tree
+ //   pcl::search::KdTree<pcl::PointNormal>::Ptr tree2(new pcl::search::KdTree<pcl::PointNormal>);
+ //   tree2->setInputCloud(cloud_with_normals);
 
-    // Save the mesh in PLY format
-    pcl::io::savePLYFile("mesh.ply", pcl_mesh);
+	//// Poisson reconstruction
+ //   //std::cout << "Poisson reconstruction..." << std::endl;
+ //   //
+ //   //pcl::Poisson<pcl::PointNormal> poisson;
+ //   //poisson.setDepth(8); // Set parameters as required
+ //   //poisson.setInputCloud(cloud_with_normals);
+ //   //pcl::PolygonMesh pcl_mesh;
+ //   //poisson.reconstruct(pcl_mesh);
 
-    std::cout << "=== PCL END" << std::endl;
+	//std::cout << "Greedy projection triangulation..." << std::endl;
+ //   pcl::GreedyProjectionTriangulation<pcl::PointNormal> gp3;
+	//pcl::PolygonMesh pcl_mesh;
+ //   // Set the maximum distance between connected points (maximum edge length)
+ //   gp3.setSearchRadius(7.0f);
+
+ //   // Set typical values for the parameters
+ //   gp3.setMu(2.5);
+ //   gp3.setMaximumNearestNeighbors(100);
+ //   gp3.setMaximumSurfaceAngle(M_PI / 4); // 45 degrees
+ //   gp3.setMinimumAngle(M_PI / 18); // 10 degrees
+ //   gp3.setMaximumAngle(2 * M_PI / 3); // 120 degrees
+ //   gp3.setNormalConsistency(false);
+
+	//gp3.setInputCloud(cloud_with_normals);
+	//gp3.setSearchMethod(tree2);
+
+ //   gp3.reconstruct(pcl_mesh);
+
+ //   // Save the mesh in PLY format
+ //   pcl::io::savePLYFile("mesh.ply", pcl_mesh);
+
+ //   std::cout << "=== PCL END" << std::endl;
     std::cout << "=== CGAL BEGIN" << std::endl;
 
     std::cout << "Reading .ply..." << std::endl;
@@ -95,6 +126,8 @@ int main(int argc, char** argv)
     // Print some information about the mesh
     std::cout << "Number of vertices: " << CGAL::num_vertices(mesh) << std::endl;
     std::cout << "Number of faces: " << CGAL::num_faces(mesh) << std::endl;
+
+    PMP::remove_isolated_vertices(mesh);
 
     // Check if the mesh has any holes (boundary cycles)
     if (CGAL::is_closed(mesh)) {
