@@ -75,6 +75,26 @@ std::vector<Eigen::Vector3f> Oriented_bounding_box::get_box_points() const {
     return points;
 }
 
+bool Oriented_bounding_box::collides_with(Oriented_bounding_box& other_box)
+{
+	Eigen::Vector3f dx = R_ * Eigen::Vector3f(1, 0, 0);
+	Eigen::Vector3f dy = R_ * Eigen::Vector3f(0, 1, 0);
+	Eigen::Vector3f dz = R_ * Eigen::Vector3f(0, 0, 1);
+	Eigen::Vector3f other_dx = other_box.R_ * Eigen::Vector3f(1, 0, 0);
+	Eigen::Vector3f other_dy = other_box.R_ * Eigen::Vector3f(0, 1, 0);
+	Eigen::Vector3f other_dz = other_box.R_ * Eigen::Vector3f(0, 0, 1);
+	Eigen::Vector3f d = other_box.center_ - center_;
+	return std::abs(d.dot(dx)) <= extent_(0) / 2 + other_box.extent_(0) / 2 &&
+		std::abs(d.dot(dy)) <= extent_(1) / 2 + other_box.extent_(1) / 2 &&
+		std::abs(d.dot(dz)) <= extent_(2) / 2 + other_box.extent_(2) / 2 &&
+		std::abs(d.dot(other_dx)) <= extent_(0) / 2 + other_box.extent_(0) / 2 &&
+		std::abs(d.dot(other_dy)) <= extent_(1) / 2 + other_box.extent_(1) / 2 &&
+		std::abs(d.dot(other_dz)) <= extent_(2) / 2 + other_box.extent_(2) / 2 &&
+		std::abs(d.dot(dx.cross(other_dx))) <= extent_(1) / 2 * other_box.extent_(2) / 2 + extent_(2) / 2 * other_box.extent_(1) / 2 &&
+		std::abs(d.dot(dy.cross(other_dy))) <= extent_(0) / 2 * other_box.extent_(2) / 2 + extent_(2) / 2 * other_box.extent_(0) / 2 &&
+		std::abs(d.dot(dz.cross(other_dz))) <= extent_(0) / 2 * other_box.extent_(1) / 2 + extent_(1) / 2 * other_box.extent_(0) / 2;
+}
+
 std::vector<size_t> Oriented_bounding_box::get_point_indices_within_bounding_box(
     const std::vector<Eigen::Vector3f>& points) const {
     std::vector<size_t> indices;

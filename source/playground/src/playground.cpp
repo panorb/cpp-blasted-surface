@@ -19,6 +19,7 @@
 #include <pcl/surface/gp3.h>
 #include <spdlog/spdlog.h>
 
+#include "blast/planes/oliveira_planes.hpp"
 #include "meshview/meshview.hpp"
 
 // Define Kernel and types
@@ -40,65 +41,65 @@ namespace PMP = CGAL::Polygon_mesh_processing;
 
 int main(int argc, char** argv)
 {
- //   std::cout << "Loading input point cloud..." << std::endl;
+    std::cout << "Loading input point cloud..." << std::endl;
 
- //   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
- //   if (pcl::io::loadPCDFile<pcl::PointXYZ>("input.pcd", *cloud) == -1) // Load point cloud
- //   {
- //       PCL_ERROR("Couldn't read file input.pcd \n");
- //       return (-1);
- //   }
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
+    if (pcl::io::loadPCDFile<pcl::PointXYZ>("input.pcd", *cloud) == -1) // Load point cloud
+    {
+        PCL_ERROR("Couldn't read file input.pcd \n");
+        return (-1);
+    }
 
-	//std::cout << "Loaded " << cloud->width * cloud->height << " data points from input.pcd" << std::endl;
-	//std::cout << "Voxel grid downsampling..." << std::endl;
- //   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_filtered(new pcl::PointCloud<pcl::PointXYZ>);
+	std::cout << "Loaded " << cloud->width * cloud->height << " data points from input.pcd" << std::endl;
+	std::cout << "Voxel grid downsampling..." << std::endl;
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_filtered(new pcl::PointCloud<pcl::PointXYZ>);
 
- //   // Call the PCL function
- //   pcl::VoxelGrid<pcl::PointXYZ> vox;
- //   vox.setInputCloud(cloud);
- //   vox.setLeafSize(3.0f, 3.0f, 3.0f);
- //   vox.filter(*cloud_filtered);
+    // Call the PCL function
+    pcl::VoxelGrid<pcl::PointXYZ> vox;
+    vox.setInputCloud(cloud);
+    vox.setLeafSize(2.0f, 2.0f, 2.0f);
+    vox.filter(*cloud_filtered);
 
- //   std::cout << "Estimating normals..." << std::endl;
+    std::cout << "Estimating normals..." << std::endl;
 
- //   // Normal estimation (optional but recommended)
- //   pcl::NormalEstimation<pcl::PointXYZ, pcl::Normal> n;
- //   pcl::PointCloud<pcl::Normal>::Ptr normals(new pcl::PointCloud<pcl::Normal>);
- //   pcl::search::KdTree<pcl::PointXYZ>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZ>);
- //   tree->setInputCloud(cloud_filtered);
- //   n.setInputCloud(cloud_filtered);
- //   n.setSearchMethod(tree);
- //   n.setKSearch(20);
- //   n.compute(*normals);
+    // Normal estimation (optional but recommended)
+    pcl::NormalEstimation<pcl::PointXYZ, pcl::Normal> n;
+    pcl::PointCloud<pcl::Normal>::Ptr normals(new pcl::PointCloud<pcl::Normal>);
+    pcl::search::KdTree<pcl::PointXYZ>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZ>);
+    tree->setInputCloud(cloud_filtered);
+    n.setInputCloud(cloud_filtered);
+    n.setSearchMethod(tree);
+    n.setKSearch(20);
+    n.compute(*normals);
 
- //   // Combine points and normals
- //   pcl::PointCloud<pcl::PointNormal>::Ptr cloud_with_normals(new pcl::PointCloud<pcl::PointNormal>);
- //   pcl::concatenateFields(*cloud_filtered, *normals, *cloud_with_normals);
+    // Combine points and normals
+    pcl::PointCloud<pcl::PointNormal>::Ptr cloud_with_normals(new pcl::PointCloud<pcl::PointNormal>);
+    pcl::concatenateFields(*cloud_filtered, *normals, *cloud_with_normals);
 
- //   // Create search tree
- //   pcl::search::KdTree<pcl::PointNormal>::Ptr tree2(new pcl::search::KdTree<pcl::PointNormal>);
- //   tree2->setInputCloud(cloud_with_normals);
+    // Create search tree
+    pcl::search::KdTree<pcl::PointNormal>::Ptr tree2(new pcl::search::KdTree<pcl::PointNormal>);
+    tree2->setInputCloud(cloud_with_normals);
 
 	//// Poisson reconstruction
- //   //std::cout << "Poisson reconstruction..." << std::endl;
- //   //
- //   //pcl::Poisson<pcl::PointNormal> poisson;
- //   //poisson.setDepth(8); // Set parameters as required
- //   //poisson.setInputCloud(cloud_with_normals);
- //   //pcl::PolygonMesh pcl_mesh;
- //   //poisson.reconstruct(pcl_mesh);
+    std::cout << "Poisson reconstruction..." << std::endl;
+
+	pcl::Poisson<pcl::PointNormal> poisson;
+    poisson.setDepth(8); // Set parameters as required
+    poisson.setInputCloud(cloud_with_normals);
+    pcl::PolygonMesh pcl_mesh;
+    poisson.reconstruct(pcl_mesh);
 
 	//std::cout << "Greedy projection triangulation..." << std::endl;
  //   pcl::GreedyProjectionTriangulation<pcl::PointNormal> gp3;
 	//pcl::PolygonMesh pcl_mesh;
  //   // Set the maximum distance between connected points (maximum edge length)
- //   gp3.setSearchRadius(7.0f);
+ //   gp3.setSearchRadius(15.0f);
 
  //   // Set typical values for the parameters
- //   gp3.setMu(2.5);
- //   gp3.setMaximumNearestNeighbors(100);
- //   gp3.setMaximumSurfaceAngle(M_PI / 4); // 45 degrees
- //   gp3.setMinimumAngle(M_PI / 18); // 10 degrees
+ //   gp3.setMu(4.f);
+ //   //gp3.setMaximumNearestNeighbors(100);
+ //   gp3.setMaximumSurfaceAngle(M_PI / 2); // 45 degrees
+ //   gp3.setMinimumAngle(M_PI / 24); // 10 degrees
  //   gp3.setMaximumAngle(2 * M_PI / 3); // 120 degrees
  //   gp3.setNormalConsistency(false);
 
@@ -107,16 +108,27 @@ int main(int argc, char** argv)
 
  //   gp3.reconstruct(pcl_mesh);
 
- //   // Save the mesh in PLY format
- //   pcl::io::savePLYFile("mesh.ply", pcl_mesh);
+	// Output number of vertices and faces
+	std::cout << "Mesh has " << pcl_mesh.cloud.width * pcl_mesh.cloud.height << " vertices and " << pcl_mesh.polygons.size() << " faces." << std::endl;
 
- //   std::cout << "=== PCL END" << std::endl;
+    // Save the mesh in PLY format
+    pcl::io::savePLYFileBinary("mesh.ply", pcl_mesh);
+
+	std::cout << "Mesh saved to mesh.ply" << std::endl;
+
+    std::cout << "=== PCL END" << std::endl;
     std::cout << "=== CGAL BEGIN" << std::endl;
 
     std::cout << "Reading .ply..." << std::endl;
 
-    std::ifstream input("mesh.ply"); // Load PLY file
+    std::ifstream input("mesh.ply", std::ios::binary); // Load PLY file
     Surface_mesh mesh;
+
+    if (!input)
+    {
+		std::cerr << "Error: cannot read the file mesh.ply filestream" << std::endl;
+		return EXIT_FAILURE;
+    }
 
     if (!input || !CGAL::IO::read_PLY(input, mesh)) {
         std::cerr << "Error: cannot read the file mesh.ply" << std::endl;
@@ -172,6 +184,144 @@ int main(int argc, char** argv)
 
     std::cout << "Skeleton vertices: " << num_vertices(skeleton) << std::endl;
 
+
+    std::cout << "Extracting planes..." << std::endl;
+
+    std::vector<Eigen::Vector3d> points_vec;
+    for (const auto& point : cloud_filtered->points)
+    {
+        points_vec.emplace_back(point.x, point.y, point.z);
+    }
+
+    std::vector<Eigen::Vector3d> normals_vec;
+    for (const auto& normal : normals->points)
+    {
+        normals_vec.emplace_back(normal.normal_x, normal.normal_y, normal.normal_z);
+    }
+
+    Oliveira_plane_segmenter oliveira_plane_segmenter;
+    oliveira_plane_segmenter.from_arrays(points_vec, normals_vec);
+    auto bbox_planes = oliveira_plane_segmenter.execute();
+
+    std::cout << "Found " << bbox_planes.size() << " planes." << std::endl;
+
+
+    // Create a meshview::Viewer object
+    meshview::Viewer viewer;
+
+
+    for (const auto& plane : bbox_planes)
+    {
+        std::cout << "Plane: " << plane << std::endl;
+
+		// Check if the plane is colliding with other planes
+		bool colliding = false;
+
+		for (const auto& other_plane : bbox_planes)
+		{
+            if (plane == other_plane)
+            {
+                continue;
+            }
+
+            // The logic for checking collsion
+            plane->scale(0.001f, plane->get_center());
+			other_plane->scale(0.001f, other_plane->get_center());
+
+			if (plane->collides_with(*other_plane))
+			{
+				colliding = true;
+				break;
+			}
+		}
+
+		// If the plane is colliding, skip it
+        /*if (colliding)
+		{
+			continue;
+		}*/
+
+		// Save distance of nearest point in skeleton to plane
+        Point& nearest_point = skeleton[0].point;
+		double min_distance = std::numeric_limits<double>::max();
+
+        // Find nearest point in skeleton to plane
+        for (Skeleton_vertex e : CGAL::make_range(vertices(skeleton))) {
+			const Point& p = skeleton[e].point;
+			// std::cout << "Point: " << p << std::endl;
+
+            Eigen::Vector3f center = plane->get_center();
+
+			double distance = std::sqrt(
+				std::pow(p.x() - center.x(), 2) +
+				std::pow(p.y() - center.y(), 2) +
+				std::pow(p.z() - center.z(), 2)
+			);
+
+			if (distance < min_distance)
+			{
+				min_distance = distance;
+				nearest_point = p;
+			}
+		}
+
+		// Calculate which normal to use
+		Eigen::Vector3f normal = plane->R_ * Eigen::Vector3f(0, 0, 1);
+
+    	// Calculate wether normal needs to be flipped to point away from the skeleton
+
+		Eigen::Vector3f skeleton_to_plane = Eigen::Vector3f(
+			plane->get_center().x() - nearest_point.x(),
+			plane->get_center().y() - nearest_point.y(),
+			plane->get_center().z() - nearest_point.z()
+		);
+
+		if (skeleton_to_plane.dot(normal) < 0)
+		{
+			normal = -normal;
+		}
+
+        // Draw the plane bbox in viewer
+        auto box_points = plane->get_box_points();
+        meshview::Points vertices{ box_points.size(), 3 };
+
+        for (size_t i = 0; i < box_points.size(); ++i)
+        {
+            vertices.row(i)(0) = box_points[i].x();
+            vertices.row(i)(1) = box_points[i].y();
+            vertices.row(i)(2) = box_points[i].z();
+        }
+
+        meshview::Triangles triangles{ 12, 3 };
+        triangles << 0, 1, 2,
+            0, 2, 3,
+            0, 4, 5,
+            0, 5, 1,
+            1, 5, 6,
+            1, 6, 2,
+            2, 6, 7,
+            2, 7, 3,
+            3, 7, 4,
+            3, 4, 0,
+            4, 7, 6,
+            4, 6, 5;
+
+
+        float r = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+        float g = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+        float b = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+        plane->color_ = Eigen::Vector3f(r, g, b);
+
+        viewer.add_mesh("oliveira", vertices, triangles, r, g, b);
+
+		// Draw the normal in viewer
+		Eigen::Vector3f start = plane->get_center();
+		Eigen::Vector3f end = start + normal * 10;
+
+		viewer.add_line(start, end, Eigen::Vector3f(1, 0, 0));
+    }
+
+
     // Draw surface mesh in viewer
     // Extract vertices and faces from the Surface_mesh
     std::vector<Eigen::Vector3f> vertices;
@@ -205,8 +355,6 @@ int main(int argc, char** argv)
         viewer_tri.row(i)(1) = faces[i][1];
         viewer_tri.row(i)(2) = faces[i][2];
     }
-    // Create a meshview::Viewer object
-    meshview::Viewer viewer;
 
     // Add the mesh to the viewer
     viewer.add_mesh("example",viewer_pts, viewer_tri,

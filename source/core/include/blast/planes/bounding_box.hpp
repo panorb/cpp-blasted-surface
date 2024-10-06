@@ -56,6 +56,7 @@ public:
 ///   | /               | /
 ///   |/                |/
 	std::vector<Eigen::Vector3f> get_box_points() const;
+	bool collides_with(Oriented_bounding_box& other_box);
 
 	std::vector<size_t> get_point_indices_within_bounding_box(
 		const std::vector<Eigen::Vector3f>& points) const;

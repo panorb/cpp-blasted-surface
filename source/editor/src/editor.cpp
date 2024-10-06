@@ -393,7 +393,7 @@ int main(int argc, char** argv)
                     vertices.row(i)(1) = box_points[i].y();
                     vertices.row(i)(2) = box_points[i].z();
 				}
-
+                 
 				Triangles triangles{12, 3};
 				triangles << 0, 1, 2,
 							 0, 2, 3,
