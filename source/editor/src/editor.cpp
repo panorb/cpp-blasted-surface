@@ -173,7 +173,7 @@ int main(int argc, char** argv)
                     points.row(i)(2) = base_point_cloud->get_points()[i][2];
 				}
 
-                // viewer.add_point_cloud(points, 0.f, 1.0f, 1.0f);
+                viewer.add_point_cloud(points, 0.f, 1.0f, 1.0f);
                 redraw_meshes = true;
 			}
 	        

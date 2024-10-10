@@ -28,4 +28,5 @@ add_subdirectory(visualizer)
 add_subdirectory(meshview)
 add_subdirectory(editor)
 add_subdirectory(playground)
+add_subdirectory(tool)
 
