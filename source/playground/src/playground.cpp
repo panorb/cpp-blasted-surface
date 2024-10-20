@@ -19,8 +19,12 @@
 #include <pcl/surface/gp3.h>
 #include <spdlog/spdlog.h>
 
+#include "blast/detected_plane_segment.hpp"
+#include "blast/graph.hpp"
 #include "blast/planes/oliveira_planes.hpp"
+#include "blast/sampler/grid_sampler.hpp"
 #include "meshview/meshview.hpp"
+#include <blast/greedy_optimizer.hpp>
 
 // Define Kernel and types
 typedef CGAL::Exact_predicates_inexact_constructions_kernel Kernel;
@@ -44,7 +48,7 @@ int main(int argc, char** argv)
     std::cout << "Loading input point cloud..." << std::endl;
 
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
-    if (pcl::io::loadPCDFile<pcl::PointXYZ>("input.pcd", *cloud) == -1) // Load point cloud
+    if (pcl::io::loadPCDFile<pcl::PointXYZ>("input2.pcd", *cloud) == -1) // Load point cloud
     {
         PCL_ERROR("Couldn't read file input.pcd \n");
         return (-1);
@@ -84,7 +88,7 @@ int main(int argc, char** argv)
     std::cout << "Poisson reconstruction..." << std::endl;
 
 	pcl::Poisson<pcl::PointNormal> poisson;
-    poisson.setDepth(8); // Set parameters as required
+    poisson.setDepth(12); // Set parameters as required
     poisson.setInputCloud(cloud_with_normals);
     pcl::PolygonMesh pcl_mesh;
     poisson.reconstruct(pcl_mesh);
@@ -209,6 +213,7 @@ int main(int argc, char** argv)
     // Create a meshview::Viewer object
     meshview::Viewer viewer;
 
+    std::vector<Detected_plane_segment> detected_planes;
 
     for (const auto& plane : bbox_planes)
     {
@@ -217,7 +222,7 @@ int main(int argc, char** argv)
 		// Check if the plane is colliding with other planes
 		bool colliding = false;
 
-		for (const auto& other_plane : bbox_planes)
+		/*for (const auto& other_plane : bbox_planes)
 		{
             if (plane == other_plane)
             {
@@ -233,7 +238,7 @@ int main(int argc, char** argv)
 				colliding = true;
 				break;
 			}
-		}
+		}*/
 
 		// If the plane is colliding, skip it
         /*if (colliding)
@@ -281,6 +286,15 @@ int main(int argc, char** argv)
 			normal = -normal;
 		}
 
+		detected_planes.push_back(Detected_plane_segment{
+			plane,
+			normal,
+            {}
+		});
+
+		detected_planes.back().sample_points = sample_points_on_grid(detected_planes.back(), 0.1f, 3.0f);
+
+
         // Draw the plane bbox in viewer
         auto box_points = plane->get_box_points();
         meshview::Points vertices{ box_points.size(), 3 };
@@ -321,6 +335,57 @@ int main(int argc, char** argv)
 		viewer.add_line(start, end, Eigen::Vector3f(1, 0, 0));
     }
 
+	for (int i = 0; i < detected_planes.size(); i++)
+	{
+        blast::Graph graph;
+        auto& plane = detected_planes[i];
+
+        // Add sample points to graph
+        for (int j = 0; j < plane.sample_points.size(); ++j)
+        {
+            auto& point = plane.sample_points[j];
+            graph.add_node(std::make_shared<blast::Node>(std::format("P{}S{}", i, j)));
+        }
+
+        // Add edges to graph
+        for (int j = 0; j < plane.sample_points.size(); ++j)
+        {
+            for (int k = 0; k < plane.sample_points.size(); ++k)
+            {
+                if (j != k && !graph.exists_edge(j, k))
+                {
+                    auto& point1 = plane.sample_points[j];
+                    auto& point2 = plane.sample_points[k];
+                    auto distance = (point1 - point2).norm();
+                    graph.add_undirected_edge(j, k, distance);
+                }
+            }
+        }
+
+        blast::Greedy_optimizer greedy_optimizer{ &graph };
+        std::vector<size_t> path = greedy_optimizer.execute();
+
+        // Prepare outputting resulting path index sequence e.g. 0 -> 1 -> 2 -> 3
+        std::string r = "";
+
+        for (auto& node : path)
+        {
+            r += std::format("{0:d} -> ", node);
+        }
+
+        // Remove last arrow from output string
+        r = r.substr(0, r.size() - 4);
+        spdlog::info("Path: {0}", r);
+
+        // Draw path in viewer
+        for (int j = 0; j < path.size() - 1; ++j)
+        {
+            auto& point1 = plane.sample_points[path[j]];
+            auto& point2 = plane.sample_points[path[j + 1]];
+
+            viewer.add_line(point1.cast<float>(), point2.cast<float>(), Eigen::Vector3f(1.0, 0.0, 0.0));
+        }
+	}
 
     // Draw surface mesh in viewer
     // Extract vertices and faces from the Surface_mesh
@@ -373,7 +438,5 @@ int main(int argc, char** argv)
 
     // Show the viewer
     viewer.show();
-
-    std::cout << "Skeleton and mapping written to files." << std::endl;
     return EXIT_SUCCESS;
 }

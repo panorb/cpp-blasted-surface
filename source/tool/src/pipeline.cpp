@@ -87,6 +87,8 @@ bool skeletonize(pcl::PointCloud<pcl::PointNormal>& cloud_with_normals, std::vec
 		return EXIT_FAILURE;
 	}
 
+	spdlog::info("Read file");
+
 	CGAL::jet_estimate_normals<CGAL::Sequential_tag>(points, 24);
 	// Compute average spacing using neighborhood of 6 points
 	double spacing = CGAL::compute_average_spacing<CGAL::Sequential_tag>(points, 6);
