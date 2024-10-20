@@ -53,7 +53,8 @@ void run_pipeline(const std::string base_pointcloud_file)
 	load_pcl_pointcloud(base_pointcloud_file, base_cloud);
 
 	pcl::PointCloud<pcl::PointXYZ>::Ptr downsampled_cloud(new pcl::PointCloud<pcl::PointXYZ>);
-	voxelgrid_downsample(base_cloud, downsampled_cloud);
+	downsampled_cloud = base_cloud;
+	//voxelgrid_downsample(base_cloud, downsampled_cloud);
 
 	pcl::PointCloud<pcl::Normal>::Ptr out_normals(new pcl::PointCloud<pcl::Normal>);
 	estimate_normals(downsampled_cloud, out_normals);
@@ -77,9 +78,11 @@ void run_pipeline(const std::string base_pointcloud_file)
 
 bool skeletonize(pcl::PointCloud<pcl::PointNormal>& cloud_with_normals, std::vector<Eigen::Vector3d> out_skeleton_vertices)
 {
+	spdlog::info("PCL - Saving point cloud to file");
 	pcl::io::savePLYFileBinary("mesh.ply", cloud_with_normals);
 	Point_set points;
 
+	spdlog::info("CGAL - Loading point cloud from file");
 	std::ifstream input("mesh.ply", std::ios::binary); // Load PLY file
 
 	if (!input || !CGAL::IO::read_PLY(input, points)) {
@@ -88,17 +91,22 @@ bool skeletonize(pcl::PointCloud<pcl::PointNormal>& cloud_with_normals, std::vec
 	}
 
 	spdlog::info("Read file");
-
+	spdlog::info("CGAl - Estimating normals");
 	CGAL::jet_estimate_normals<CGAL::Sequential_tag>(points, 24);
 	// Compute average spacing using neighborhood of 6 points
+
+	spdlog::info("CGAl - Average spacing");
 	double spacing = CGAL::compute_average_spacing<CGAL::Sequential_tag>(points, 6);
-
 	// Orientation of normals, returns iterator to first unoriented point
-	typename Point_set::iterator unoriented_points_begin =
-		CGAL::mst_orient_normals(points, 24); // Use 24 neighbors
 
-	points.remove(unoriented_points_begin, points.end());
+	//spdlog::info("CGAl - Orient normals");
+	//typename Point_set::iterator unoriented_points_begin =
+	//	CGAL::mst_orient_normals(points, 24); // Use 24 neighbors
+
+	//points.remove(unoriented_points_begin, points.end());
 	Surface_mesh mesh;
+
+	spdlog::info("CGAL - Poisson surface reconstruction");
 	CGAL::poisson_surface_reconstruction_delaunay
 	(points.begin(), points.end(),
 		points.point_map(), points.normal_map(),
@@ -152,6 +160,8 @@ bool skeletonize(pcl::PointCloud<pcl::PointNormal>& cloud_with_normals, std::vec
 		const Point& p = skeleton[e].point;
 		out_skeleton_vertices.push_back(Eigen::Vector3d(p.x(), p.y(), p.z()));
 	}
+
+	return true;
 }
 
 void poisson_reconstruction(pcl::PointCloud<pcl::PointNormal>::Ptr cloud_with_normals, pcl::PolygonMesh& out_mesh)
