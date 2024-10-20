@@ -1,4 +1,4 @@
-#include "meshview/meshview.hpp"
+#include "blast/meshview.hpp"
 
 #include <cmath>
 #include <iostream>
@@ -7,9 +7,9 @@
 #include <GLFW/glfw3.h>
 #include <Eigen/Geometry>
 
-#include "meshview/util.hpp"
-#include "meshview/internal/shader.hpp"
-#include "meshview/internal/assert.hpp"
+#include "blast/util.hpp"
+#include "blast/internal/shader.hpp"
+#include "blast/internal/assert.hpp"
 
 namespace meshview {
 namespace {

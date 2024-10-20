@@ -3,7 +3,7 @@
 #define MESHVIEW_SHADER_9845A71E_0422_44A7_9AF9_FAC46ECE9C40
 
 #include <string>
-#include "meshview/common.hpp"
+#include "blast/common.hpp"
 
 namespace meshview {
 namespace internal {

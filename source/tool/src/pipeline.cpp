@@ -15,7 +15,7 @@
 #include <pcl/search/kdtree.h>
 #include <pcl/surface/poisson.h>
 
-#include "meshview/util.hpp"
+#include "blast/util.hpp"
 
 
 // Define Kernel and types

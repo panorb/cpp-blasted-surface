@@ -1,11 +1,11 @@
-#include "meshview/util.hpp"
+#include "blast/util.hpp"
 
 #include <fstream>
 #include <iostream>
 #include <Eigen/Geometry>
 
-#include "meshview/common.hpp"
-#include "meshview/internal/assert.hpp"
+#include "blast/common.hpp"
+#include "blast/internal/assert.hpp"
 
 namespace meshview {
 namespace util {

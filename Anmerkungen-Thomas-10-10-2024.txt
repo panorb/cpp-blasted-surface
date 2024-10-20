@@ -1,0 +1,10 @@
+ich definiere mir einen sicheren Bereich, sicherheitsbereich um die ebene, analysieren innerhalb des sicherheitsbereichs,standardabweichungen anschauen
+
+berge und täler in der punktwolke, alle punkte suchen die in sicherheitsbereich
+
+tcp am roboterarm verschieben.
+
+ein fester pfad, der abgefahren wird (1 Bahn)
+
+- rein und raus (input und output)
+- Umsetzung ohne kalibriuerung der transformation

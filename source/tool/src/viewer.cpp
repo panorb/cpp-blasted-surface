@@ -1,4 +1,4 @@
-#include "meshview/meshview.hpp"
+#include "blast/meshview.hpp"
 
 #include <iostream>
 
@@ -6,10 +6,10 @@
 #include <GLFW/glfw3.h>
 #include <Eigen/Geometry>
 
-#include "meshview/util.hpp"
-#include "meshview/internal/shader.hpp"
+#include "blast/util.hpp"
+#include "blast/internal/shader.hpp"
 // Inlined shader code
-#include "meshview/internal/shader_inline.hpp"
+#include "blast/internal/shader_inline.hpp"
 
 #ifdef MESHVIEW_IMGUI
 #include <imgui_impl_opengl3.h>

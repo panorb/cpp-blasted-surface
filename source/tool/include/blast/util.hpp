@@ -3,7 +3,7 @@
 #define MESHVIEW_UTIL_67A492E2_6CCA_4FA8_9763_90A5DA4F6837
 
 #include <string>
-#include "meshview/common.hpp"
+#include "blast/common.hpp"
 
 namespace meshview {
 namespace util {

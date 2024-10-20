@@ -1,5 +1,5 @@
 // Copied & adapted from learnopengl.com
-#include "meshview/internal/shader.hpp"
+#include "blast/internal/shader.hpp"
 
 #include <GL/glew.h>
 #include <fstream>

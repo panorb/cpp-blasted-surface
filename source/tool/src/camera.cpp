@@ -1,10 +1,10 @@
-#include "meshview/meshview.hpp"
+#include "blast/meshview.hpp"
 
 #include <cmath>
 #include <iostream>
 #include <Eigen/Geometry>
 
-#include "meshview/util.hpp"
+#include "blast/util.hpp"
 
 namespace meshview {
 
