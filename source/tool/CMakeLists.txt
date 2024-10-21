@@ -1,7 +1,7 @@
-add_executable(Tool src/startup.cpp src/tool.hpp src/tool.cpp src/pipeline.hpp src/pipeline.cpp
-	include/blast/common.hpp include/blast/meshview.hpp include/blast/meshview_imgui.hpp include/blast/util.hpp
-	include/blast/internal/assert.hpp include/blast/internal/shader_inline.hpp
-	src/camera.cpp src/mesh.cpp src/shader.cpp src/texture.cpp src/util.cpp src/viewer.cpp
+add_executable(Tool src/startup.cpp src/pipeline.hpp src/pipeline.cpp
+	include/blast/common.hpp include/blast/tool.hpp include/blast/tool_imgui.hpp include/blast/util.hpp
+	include/blast/internal/assert.hpp include/blast/internal/shader.hpp include/blast/internal/shader_inline.hpp
+	src/camera.cpp src/mesh.cpp src/shader.cpp src/texture.cpp src/util.cpp src/tool.cpp
 	external/stb/stb_image.cpp)
 target_link_libraries(Tool PUBLIC Core OpenGL::GL glfw GLEW::GLEW Eigen3::Eigen imgui::imgui)
 target_include_directories(Tool PUBLIC external)

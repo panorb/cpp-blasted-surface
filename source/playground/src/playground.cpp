@@ -210,8 +210,8 @@ int main(int argc, char** argv)
     std::cout << "Found " << bbox_planes.size() << " planes." << std::endl;
 
 
-    // Create a meshview::Viewer object
-    meshview::Viewer viewer;
+    // Create a blast::Tool object
+    blast::Viewer viewer;
 
     std::vector<Detected_plane_segment> detected_planes;
 
@@ -297,7 +297,7 @@ int main(int argc, char** argv)
 
         // Draw the plane bbox in viewer
         auto box_points = plane->get_box_points();
-        meshview::Points vertices{ box_points.size(), 3 };
+        blast::Points vertices{ box_points.size(), 3 };
 
         for (size_t i = 0; i < box_points.size(); ++i)
         {
@@ -306,7 +306,7 @@ int main(int argc, char** argv)
             vertices.row(i)(2) = box_points[i].z();
         }
 
-        meshview::Triangles triangles{ 12, 3 };
+        blast::Triangles triangles{ 12, 3 };
         triangles << 0, 1, 2,
             0, 2, 3,
             0, 4, 5,
@@ -406,8 +406,8 @@ int main(int argc, char** argv)
     }
 
 
-    meshview::Points viewer_pts{ vertices.size(), 3 };
-	meshview::Triangles viewer_tri{ faces.size(), 3 };
+    blast::Points viewer_pts{ vertices.size(), 3 };
+	blast::Triangles viewer_tri{ faces.size(), 3 };
 
 	for (size_t i = 0; i < vertices.size(); i++) {
         viewer_pts.row(i)(0) = vertices[i](0);

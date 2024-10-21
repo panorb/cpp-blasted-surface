@@ -25,7 +25,7 @@
 #include <pcl/io/ply_io.h>
 #include <pcl/surface/poisson.h>
 
-using namespace meshview;
+using namespace blast;
 
 std::unique_ptr<blast::Point_cloud> base_point_cloud = nullptr;
 size_t base_point_cloud_index = 0;

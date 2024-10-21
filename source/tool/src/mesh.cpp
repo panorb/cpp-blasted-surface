@@ -1,4 +1,4 @@
-#include "blast/meshview.hpp"
+#include "blast/tool.hpp"
 
 #include <cmath>
 #include <iostream>
@@ -11,7 +11,7 @@
 #include "blast/internal/shader.hpp"
 #include "blast/internal/assert.hpp"
 
-namespace meshview {
+namespace blast {
 namespace {
 
 void shader_set_transform_matrices(const internal::Shader& shader,
@@ -87,7 +87,7 @@ void Mesh::resize(size_t num_verts, size_t num_triangles) {
 void Mesh::draw(Index shader_id, const Camera& camera) {
     if (!enabled || data.rows() == 0) return;
     if (!~VAO) {
-        std::cerr << "ERROR: Please call meshview::Mesh::update() before "
+        std::cerr << "ERROR: Please call blast::Mesh::update() before "
                      "Mesh::draw()\n";
         return;
     }
@@ -489,7 +489,7 @@ PointCloud::PointCloud(const Eigen::Ref<const Points>& pos,
                        const Eigen::Ref<const Points>& rgb)
     : PointCloud(pos.rows()) {
     if (!pos.rows() || (rgb.rows() && pos.rows() != rgb.rows())) {
-        std::cerr << "Invalid meshview::PointCloud construction: "
+        std::cerr << "Invalid blast::PointCloud construction: "
                      "pos cannot be empty and pos, rgb should have identical # "
                      "rows\n";
         return;
@@ -556,7 +556,7 @@ void PointCloud::update(bool force_init) {
 void PointCloud::draw(Index shader_id, const Camera& camera) {
     if (!enabled) return;
     if (!~VAO) {
-        std::cerr << "ERROR: Please call meshview::PointCloud::update() before "
+        std::cerr << "ERROR: Please call blast::PointCloud::update() before "
                      "PointCloud::draw()\n";
         return;
     }
@@ -641,4 +641,4 @@ BOTH_MESH_AND_POINTCLOUD(enable(bool val) {
     return *this;
 })
 
-}  // namespace meshview
+}  // namespace blast

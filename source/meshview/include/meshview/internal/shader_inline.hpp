@@ -2,7 +2,7 @@
 #ifndef VIEWER_SHADER_INLINE_91D27C05_59C0_4F9F_A6C5_6AA9E2000CDA
 #define VIEWER_SHADER_INLINE_91D27C05_59C0_4F9F_A6C5_6AA9E2000CDA
 
-namespace meshview {
+namespace blast {
 
 // Shading for mesh using texture
 static const char* MESH_VERTEX_SHADER = R"SHADER(
@@ -148,6 +148,6 @@ void main(){
 }
 )SHADER";
 
-}  // namespace meshview
+}  // namespace blast
 
 #endif  // ifndef VIEWER_SHADER_INLINE_91D27C05_59C0_4F9F_A6C5_6AA9E2000CDA

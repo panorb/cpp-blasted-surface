@@ -1,8 +1,9 @@
-#include "tool.hpp"
+#include "blast/tool.hpp"
 
 int main(int argc, char** argv)
 {
-	Tool tool;
-	tool.run();
+	blast::Tool tool;
+	tool.show();
+	// tool.run();
 	return 0;
 }

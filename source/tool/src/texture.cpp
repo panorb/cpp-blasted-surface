@@ -1,4 +1,4 @@
-#include "blast/meshview.hpp"
+#include "blast/tool.hpp"
 
 #include <iostream>
 #include <GL/glew.h>
@@ -6,7 +6,7 @@
 #include "blast/util.hpp"
 #include "blast/internal/assert.hpp"
 
-namespace meshview {
+namespace blast {
 
 // *** Texture ***
 Texture::Texture(const std::string& path, bool flip)

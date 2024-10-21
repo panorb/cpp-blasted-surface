@@ -1,4 +1,4 @@
-#include "blast/meshview.hpp"
+#include "blast/tool.hpp"
 
 #include <cmath>
 #include <iostream>
@@ -6,7 +6,7 @@
 
 #include "blast/util.hpp"
 
-namespace meshview {
+namespace blast {
 
 Camera::Camera(const Vector3f& center_of_rot, const Vector3f& world_up,
                float dist_to_center, float yaw, float pitch, float roll,
@@ -85,6 +85,16 @@ void Camera::reset_proj() {
     update_proj();
 }
 
+Eigen::Vector3f Camera::raycast(float x, float y) const
+{
+	Eigen::Vector4f ray_clip(x, y, -1.f, 1.f);
+	Eigen::Vector4f ray_eye = proj.inverse() * ray_clip;
+	ray_eye[2] = -1.f;
+	ray_eye[3] = 0.f;
+	Eigen::Vector4f ray_world = view.inverse() * ray_eye;
+	return ray_world.head<3>().normalized();
+}
+
 void Camera::update_view() {
     front[0] = cos(yaw) * cos(pitch);
     front[1] = sin(pitch);
@@ -110,4 +120,4 @@ void Camera::update_proj() {
     }
 }
 
-}  // namespace meshview
+}  // namespace blast

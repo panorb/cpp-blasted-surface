@@ -4,7 +4,7 @@
 #include "Eigen/Geometry"
 #include <iostream>
 
-using namespace meshview;
+using namespace blast;
 
 int main(int argc, char** argv) {
     Viewer viewer;
@@ -170,7 +170,7 @@ int main(int argc, char** argv) {
     };
 #else
     std::cout
-        << "meshview was built without Dear ImGUI, no GUI will be available\n";
+        << "blast was built without Dear ImGUI, no GUI will be available\n";
 #endif
     viewer.show();
 }

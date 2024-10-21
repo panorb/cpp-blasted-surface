@@ -6,7 +6,7 @@
 
 #include "meshview/util.hpp"
 
-namespace meshview {
+namespace blast {
 
 Camera::Camera(const Vector3f& center_of_rot, const Vector3f& world_up,
                float dist_to_center, float yaw, float pitch, float roll,
@@ -110,4 +110,4 @@ void Camera::update_proj() {
     }
 }
 
-}  // namespace meshview
+}  // namespace blast

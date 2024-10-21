@@ -1,11 +1,9 @@
 #pragma once
-#ifndef MESHVIEW_SHADER_9845A71E_0422_44A7_9AF9_FAC46ECE9C40
-#define MESHVIEW_SHADER_9845A71E_0422_44A7_9AF9_FAC46ECE9C40
 
 #include <string>
 #include "blast/common.hpp"
 
-namespace meshview {
+namespace blast {
 namespace internal {
 
 class Shader {
@@ -41,5 +39,3 @@ public:
 
 }  // namespace internal
 }  // namespace meshview
-
-#endif  // ifndef MESHVIEW_SHADER_9845A71E_0422_44A7_9AF9_FAC46ECE9C40

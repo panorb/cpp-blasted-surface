@@ -16,7 +16,7 @@
 #include <imgui_impl_glfw.h>
 #endif
 
-namespace meshview {
+namespace blast {
 namespace {
 // Axes data
 const float AXIS_LEN = 0.5f;
@@ -32,10 +32,10 @@ void error_callback(int error, const char* description) {
 
 void win_key_callback(GLFWwindow* window, int key, int scancode, int action,
                       int mods) {
-    meshview::Viewer& viewer =
-        *reinterpret_cast<meshview::Viewer*>(glfwGetWindowUserPointer(window));
+    blast::Viewer& viewer =
+        *reinterpret_cast<blast::Viewer*>(glfwGetWindowUserPointer(window));
     if (viewer.on_key &&
-        !viewer.on_key(key, (meshview::input::Action)action, mods))
+        !viewer.on_key(key, (blast::input::Action)action, mods))
         return;
 
 #ifdef MESHVIEW_IMGUI
@@ -110,13 +110,13 @@ F:                         toggle fullscreen window
 
 void win_mouse_button_callback(GLFWwindow* window, int button, int action,
                                int mods) {
-    meshview::Viewer& viewer =
-        *reinterpret_cast<meshview::Viewer*>(glfwGetWindowUserPointer(window));
+    blast::Viewer& viewer =
+        *reinterpret_cast<blast::Viewer*>(glfwGetWindowUserPointer(window));
     glfwGetCursorPos(window, &viewer._mouse_x, &viewer._mouse_y);
 
     if (action == GLFW_RELEASE) viewer._mouse_button = -1;
     if (viewer.on_mouse_button &&
-        !viewer.on_mouse_button(button, (meshview::input::Action)action,
+        !viewer.on_mouse_button(button, (blast::input::Action)action,
                                 mods)) {
         return;
     }
@@ -133,8 +133,8 @@ void win_mouse_button_callback(GLFWwindow* window, int button, int action,
 void win_mouse_move_callback(GLFWwindow* window, double x, double y) {
     bool prevent_default = false;
 
-    meshview::Viewer& viewer =
-        *reinterpret_cast<meshview::Viewer*>(glfwGetWindowUserPointer(window));
+    blast::Viewer& viewer =
+        *reinterpret_cast<blast::Viewer*>(glfwGetWindowUserPointer(window));
     double prex = viewer._mouse_x, prey = viewer._mouse_y;
     viewer._mouse_x = x, viewer._mouse_y = y;
     if (viewer.on_mouse_move && !viewer.on_mouse_move(x, y)) {
@@ -158,8 +158,8 @@ void win_mouse_move_callback(GLFWwindow* window, double x, double y) {
 }
 
 void win_scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
-    meshview::Viewer& viewer =
-        *reinterpret_cast<meshview::Viewer*>(glfwGetWindowUserPointer(window));
+    blast::Viewer& viewer =
+        *reinterpret_cast<blast::Viewer*>(glfwGetWindowUserPointer(window));
     if (viewer.on_scroll && !viewer.on_scroll(xoffset, yoffset)) {
         return;
     }
@@ -172,8 +172,8 @@ void win_scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
 
 // Window resize
 void win_framebuffer_size_callback(GLFWwindow* window, int width, int height) {
-    meshview::Viewer& viewer =
-        *reinterpret_cast<meshview::Viewer*>(glfwGetWindowUserPointer(window));
+    blast::Viewer& viewer =
+        *reinterpret_cast<blast::Viewer*>(glfwGetWindowUserPointer(window));
     viewer.camera.aspect = (float)width / (float)height;
     viewer.camera.update_proj();
     glViewport(0, 0, width, height);
@@ -207,7 +207,7 @@ Viewer::~Viewer() { glfwTerminate(); }
 
 void Viewer::show() {
     GLFWwindow* window =
-        glfwCreateWindow(_width, _height, "meshview", NULL, NULL);
+        glfwCreateWindow(_width, _height, "blast", NULL, NULL);
     if (!window) {
         glfwTerminate();
         std::cerr << "GLFW window creation failed\n";
@@ -425,4 +425,4 @@ void Viewer::delete_all(const std::string& tag)
     }
 }
 
-}  // namespace meshview
+}  // namespace blast

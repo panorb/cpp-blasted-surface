@@ -6,7 +6,7 @@
 #include "meshview/util.hpp"
 #include "meshview/internal/assert.hpp"
 
-namespace meshview {
+namespace blast {
 
 // *** Texture ***
 Texture::Texture(const std::string& path, bool flip)

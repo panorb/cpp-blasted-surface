@@ -7,7 +7,7 @@
 #include "blast/common.hpp"
 #include "blast/internal/assert.hpp"
 
-namespace meshview {
+namespace blast {
 namespace util {
 
 Matrix4f persp(float xscale, float yscale, float z_near, float z_far) {
@@ -95,4 +95,4 @@ Eigen::Matrix<Index, Eigen::Dynamic, 1> make_uv_to_vert_map(
 }
 
 }  // namespace util
-}  // namespace meshview
+}  // namespace blast

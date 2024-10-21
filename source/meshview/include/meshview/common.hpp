@@ -11,7 +11,7 @@
 #define MESHVIEW_VERSION_MINOR 0
 #define MESHVIEW_VERSION_PATCH 1
 
-namespace meshview {
+namespace blast {
 
 using Matrix2f = Eigen::Matrix2f;
 using Matrix3f = Eigen::Matrix3f;

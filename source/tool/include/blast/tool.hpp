@@ -1,7 +1,5 @@
 #pragma once
 #define _USE_MATH_DEFINES
-#ifndef MESHVIEW_B1FE2D07_A12E_4C8B_A673_D9AC48841D24
-#define MESHVIEW_B1FE2D07_A12E_4C8B_A673_D9AC48841D24
 
 #include "blast/common.hpp"
 #include <vector>
@@ -12,7 +10,7 @@
 #include <cmath>
 #include <memory>
 
-namespace meshview {
+namespace blast {
 
 // Represents a texture/material
 struct Texture {
@@ -102,6 +100,11 @@ class Camera {
     void reset_view();
     // Reset the projection
     void reset_proj();
+
+    // Raycast
+	// Given normalized device coordinates (x, y) in [-1, 1], return the ray
+	// from camera position to the world
+	Eigen::Vector3f raycast(float x, float y) const;
 
     // * Camera matrices
     // View matrix: global -> view coords
@@ -413,24 +416,24 @@ class PointCloud {
     Index VAO = -1, VBO = -1;
 };
 
-// MeshView OpenGL 3D viewer
-class Viewer {
+// Based on MeshView OpenGL 3D viewer
+class Tool {
    public:
-    Viewer();
-    ~Viewer();
+    Tool();
+    ~Tool();
 
     // Show window and start render loop; blocks execution
     // press q/ESC to close window and exit loop
     void show();
 
-    // Add mesh (to Viewer::meshes), arguments are forwarded to Mesh constructor
+    // Add mesh (to Tool::meshes), arguments are forwarded to Mesh constructor
     template <typename... Args>
     Mesh& add_mesh(Args&&... args) {
         meshes.push_back(std::make_unique<Mesh>(std::forward<Args>(args)...));
         if (_looping) meshes.back()->update();
         return *meshes.back();
     }
-    // Add point_cloud (to Viewer::point_clouds)
+    // Add point_cloud (to Tool::point_clouds)
     // arguments are forwarded to PointCloud constructor
     template <typename... Args>
     PointCloud& add_point_cloud(Args&&... args) {
@@ -506,40 +509,40 @@ class Viewer {
     // * Aesthetics
     // Window title, updated on show() calls only (i.e. please set before
     // show())
-    std::string title = "meshview";
+    std::string title = "blast";
 
     // Background color
     Vector3f background;
 
     // * Event callbacks
     // Called after GL cnotext init
-    std::function<void()> on_open;
+    void on_open();
     // Called when window is about to close
-    std::function<void()> on_close;
+    void on_close();
     // Called per iter of render loop, before on_gui
     // return true if mesh/point cloud/camera data has been updated, false
     // otherwise
-    std::function<bool()> on_loop;
+    bool on_loop();
 #ifdef MESHVIEW_IMGUI
     // Called per iter of render loop, after on_loop
     // only avaiable if MESHVIEW_IMGUI defined.
     // Within the function, Dear ImGui is already set up,
     // ie. ready to use ImGui::Begin etc
-    std::function<bool()> on_gui;
+    bool on_gui();
 #endif
     // Called on key up/down/repeat: args (key, action, mods), return false to
     // prevent default see https://www.glfw.org/docs/3.3/group__mods.html on
     // mods
-    std::function<bool(int, input::Action, int)> on_key;
+    bool on_key(int key, input::Action action, int mods);
     // Called on mouse up/down/repeat: args (button, action, mods), return false
     // to prevent default see https://www.glfw.org/docs/3.3/group__mods.html on
     // mods
-    std::function<bool(int, input::Action, int)> on_mouse_button;
+    bool on_mouse_button(int key, input::Action action, int mods);
     // Called on mouse move: args(x, y) return false to prevent default
-    std::function<bool(double, double)> on_mouse_move;
+    bool on_mouse_move(double x, double y);
     // Called on mouse scroll: args(xoffset, yoffset) return false to prevent
     // default
-    std::function<bool(double, double)> on_scroll;
+    bool on_scroll(double xoffset, double yoffset);
 
     // * Dynamic data (advanced, for use in callbacks)
     // Window width/height, as set in system
@@ -567,6 +570,4 @@ class Viewer {
     bool _looping = false;
 };
 
-}  // namespace meshview
-
-#endif  // ifndef MESHVIEW_B1FE2D07_A12E_4C8B_A673_D9AC48841D24
+}  // namespace blast

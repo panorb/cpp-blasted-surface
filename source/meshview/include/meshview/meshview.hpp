@@ -12,7 +12,7 @@
 #include <cmath>
 #include <memory>
 
-namespace meshview {
+namespace blast {
 
 // Represents a texture/material
 struct Texture {
@@ -506,7 +506,7 @@ class Viewer {
     // * Aesthetics
     // Window title, updated on show() calls only (i.e. please set before
     // show())
-    std::string title = "meshview";
+    std::string title = "blast";
 
     // Background color
     Vector3f background;
@@ -567,6 +567,6 @@ class Viewer {
     bool _looping = false;
 };
 
-}  // namespace meshview
+}  // namespace blast
 
 #endif  // ifndef MESHVIEW_B1FE2D07_A12E_4C8B_A673_D9AC48841D24

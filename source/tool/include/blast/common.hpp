@@ -1,6 +1,4 @@
 #pragma once
-#ifndef MESHVIEW_COMMON_93D99C8D_E8CA_4FFE_9716_D8237925F910
-#define MESHVIEW_COMMON_93D99C8D_E8CA_4FFE_9716_D8237925F910
 
 #include <Eigen/Core>
 
@@ -11,7 +9,7 @@
 #define MESHVIEW_VERSION_MINOR 0
 #define MESHVIEW_VERSION_PATCH 1
 
-namespace meshview {
+namespace blast {
 
 using Matrix2f = Eigen::Matrix2f;
 using Matrix3f = Eigen::Matrix3f;
@@ -42,5 +40,3 @@ enum class Action {
 }  // namespace input
 
 }
-
-#endif  // ifndef MESHVIEW_COMMON_93D99C8D_E8CA_4FFE_9716_D8237925F910

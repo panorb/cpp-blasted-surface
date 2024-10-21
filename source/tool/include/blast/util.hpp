@@ -1,11 +1,9 @@
 #pragma once
-#ifndef MESHVIEW_UTIL_67A492E2_6CCA_4FA8_9763_90A5DA4F6837
-#define MESHVIEW_UTIL_67A492E2_6CCA_4FA8_9763_90A5DA4F6837
 
 #include <string>
 #include "blast/common.hpp"
 
-namespace meshview {
+namespace blast {
 namespace util {
 
 // Perspective projection matrix
@@ -47,6 +45,4 @@ Eigen::Matrix<Index, Eigen::Dynamic, 1> make_uv_to_vert_map(
                         const Eigen::Ref<const Triangles>& uv_tri_faces);
 
 }  // namespace util
-}  // namespace meshview
-
-#endif  // ifndef MESHVIEW_UTIL_67A492E2_6CCA_4FA8_9763_90A5DA4F6837
+}  // namespace blast
