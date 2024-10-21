@@ -1,0 +1,10 @@
+- Meshview (in Tool) zum Laufen / Öffnen bringen
+- Pointcloud laden und anzeigen
+- Planes finden
+- Auswahl von gefundenen Planes ermöglichen!!!
+- Auf Basis der gewählten Planes Punkte erzeugen
+- Mit Optimierungsansatz  lokale Pfade berechnen
+- Globale Pfade berechnen
+- Pfade verbinden
+- Umrechnung in Roboter-Koordinatenystem
+- G-Code-Ausgabe
