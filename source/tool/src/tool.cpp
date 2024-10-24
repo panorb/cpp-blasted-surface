@@ -11,6 +11,7 @@
 #include <pcl/surface/poisson.h>
 
 #include "pipeline.hpp"
+#include "blast/greedy_optimizer.hpp"
 #include "blast/sampler/grid_sampler.hpp"
 
 
@@ -43,6 +44,17 @@ Oliveira_plane_segmenter oliveira_planes;
 
 std::vector<Eigen::Vector3f> skeleton_vertices;
 
+std::vector<Eigen::Vector3f> total_path;
+
+Eigen::Vector3f line1_start = { 0.0f, 0.0f, 0.0f };
+Eigen::Vector3f line1_end = { 0.0f, 880.0f, 0.0f };
+Eigen::Vector3f line2_start = { -420.0f, -745.0f, 565.0f };
+Eigen::Vector3f line2_end = { -342.22f, -822.78, 565.0f };
+Eigen::Vector3f scanner_offset = { 0.0f, 0.0f, 0.0f };
+
+Eigen::Vector3f transform_point(Eigen::Vector3f pt, Eigen::Vector3f line1_start, Eigen::Vector3f line1_end, Eigen::Vector3f line2_start, Eigen::Vector3f line2_end, Eigen::Vector3f scanner_offset) {
+    return pt;
+}
 
 bool Tool::on_gui()
 {
@@ -111,8 +123,7 @@ bool Tool::on_gui()
 
     }
 
-    ImGui::Separator();
-    ImGui::Text("Oliveira Plane Segmentation");
+    ImGui::SeparatorText("Oliveira Plane Segmentation");
 
     oliveira_planes.render_controls();
     if (ImGui::Button("Oliveira: Extract Planes"))
@@ -319,6 +330,183 @@ bool Tool::on_gui()
         }
 	}
 
+    if (ImGui::Button("Optimize local paths"))
+    {
+        for (int i = 0; i < detected_planes.size(); ++i)
+        {
+            blast::Graph graph;
+            auto& plane = detected_planes[i];
+
+            // Add sample points to graph
+            for (int j = 0; j < plane.sample_points.size(); ++j)
+            {
+                auto& point = plane.sample_points[j];
+                graph.add_node(std::make_shared<blast::Node>(std::format("P{}S{}", i, j)));
+            }
+
+            // Add edges to graph
+            for (int j = 0; j < plane.sample_points.size(); ++j)
+            {
+                for (int k = 0; k < plane.sample_points.size(); ++k)
+                {
+                    if (j != k && !graph.exists_edge(j, k))
+                    {
+                        auto& point1 = plane.sample_points[j];
+                        auto& point2 = plane.sample_points[k];
+                        auto distance = (point1 - point2).norm();
+                        graph.add_undirected_edge(j, k, distance);
+                    }
+                }
+            }
+
+            // Optimize graph
+            // blast::Ant_colony_optimizer ant_colony_optimizer{&graph, 8, 100};
+            // std::vector<size_t> path = ant_colony_optimizer.execute_iterations(100);
+            blast::Greedy_optimizer greedy_optimizer{ &graph, plane.sample_points };
+            std::vector<size_t> path = greedy_optimizer.execute();
+			plane.local_path = path;
+
+            // Prepare outputting resulting path index sequence e.g. 0 -> 1 -> 2 -> 3
+            std::string r = "";
+
+            for (auto& node : path)
+            {
+                r += std::format("{0:d} -> ", node);
+            }
+
+            // Remove last arrow from output string
+            r = r.substr(0, r.size() - 4);
+            spdlog::info("Path: {0}", r);
+
+            // Draw path in viewer
+            for (int j = 0; j < path.size() - 1; ++j)
+            {
+                auto& point1 = plane.sample_points[path[j]];
+                auto& point2 = plane.sample_points[path[j + 1]];
+
+                viewer.add_line(point1.cast<float>(), point2.cast<float>(), Eigen::Vector3f(1.0, 0.0, 0.0));
+            }
+
+            redraw_meshes = true;
+        }
+    }
+
+    // Optimize global paths
+    if (ImGui::Button("Optimize global paths"))
+    {
+        blast::Graph graph;
+		std::vector<Eigen::Vector3f> all_centers;
+
+        for (int i = 0; i < detected_planes.size(); ++i)
+        {
+            graph.add_node(std::make_shared<blast::Node>(std::format("P{}", i)));
+			all_centers.push_back(detected_planes[i].bbox->get_center().cast<float>());
+        }
+
+        for (int i = 0; i < detected_planes.size(); ++i)
+        {
+            for (int j = 0; j < detected_planes.size(); ++j)
+            {
+                if (i != j && !graph.exists_edge(i, j))
+                {
+                    auto& plane1 = detected_planes[i];
+                    auto& plane2 = detected_planes[j];
+                    auto distance = (plane1.bbox->get_center() - plane2.bbox->get_center()).norm();
+                    graph.add_undirected_edge(i, j, distance);
+                }
+            }
+        }
+
+        // Optimize graph
+        blast::Greedy_optimizer greedy_optimizer{ &graph, all_centers };
+
+        // total_path.insert(total_path.end(),detected_planes[0].local_path.begin(), detected_planes[0].local_path.begin());
+        for (size_t idx : detected_planes[0].local_path)
+        {
+            total_path.push_back(detected_planes[0].sample_points[idx]);
+        }
+
+        // Draw path
+        auto path = greedy_optimizer.execute();
+        for (int i = 0; i < path.size() - 1; ++i)
+        {
+            auto& plane1 = detected_planes[path[i]];
+            auto& plane2 = detected_planes[path[i + 1]];
+
+            // Add sphere for point1
+            viewer.add_sphere(
+                "path",
+                plane1.bbox->get_center().cast<float>(),
+                2.0f, Eigen::Vector3f(1.0f, 0.0f, 0.0f)
+            );
+
+            auto start_point = plane1.sample_points[plane1.local_path.back()];
+            auto end_point = plane2.sample_points[plane2.local_path.front()];
+
+            std::vector<Eigen::Vector3f> inbetween_points;
+
+            //while (is_overlapping(p1, inbetween_points, p2))
+            //{
+            // Add more points
+            inbetween_points.push_back(start_point + (end_point - start_point) * 0.25f + 8.0f * plane1.normal);
+            inbetween_points.push_back(start_point + (end_point - start_point) * 0.75f + 8.0f * plane2.normal);
+            //}
+
+            std::vector<Eigen::Vector3f> all_points;
+            all_points.push_back(start_point);
+
+            // All points from inbetween_points
+            for (auto& point : inbetween_points)
+            {
+                all_points.push_back(point);
+            }
+
+            all_points.push_back(end_point);
+
+			total_path.insert(total_path.end(), all_points.begin(), all_points.end());
+
+			for (size_t idx : plane2.local_path)
+			{
+				total_path.push_back(plane2.sample_points[idx]);
+			}
+
+
+            // Draw lines in viewer
+            for (int i = 0; i < all_points.size() - 1; ++i)
+            {
+                viewer.add_line(all_points[i], all_points[i + 1], Eigen::Vector3f(1.0, 0.0, 0.0));
+                viewer.add_sphere(
+                    "path",
+                    all_points[i],
+                    0.4f, Eigen::Vector3f(1.0f, 0.0f, 0.0f)
+                );
+            }
+        }
+
+        redraw_meshes = true;
+    }
+
+
+    ImGui::SeparatorText("Koordinatentransformation");
+    ImGui::Text("Linie in Punktwolke");
+	ImGui::DragFloat3("Start", line1_start.data(), 0.1f);
+    ImGui::DragFloat3("End", line1_end.data(), 0.1f);
+
+    ImGui::Text("Linie in Roboter-KOS");
+    ImGui::DragFloat3("Start", line2_start.data(), 0.1f);
+    ImGui::DragFloat3("End", line2_end.data(), 0.1f);
+    ImGui::DragFloat3("Scanner-Offset", scanner_offset.data(), 0.1f);
+
+    if (ImGui::Button("Ausgabe in G-Code"))
+    {
+        spdlog::info("G-Code:");
+        for (auto pt : total_path)
+        {
+            Eigen::Vector3f transformed = blast::transform_point(pt, line1_start, line1_end, line2_start, line2_end, scanner_offset);
+            spdlog::info("G01 X={0:.2f} Y={1:.2f} Z={2:.2f} A=-0.0 B=-0.0 C=45.0 F=200.0", transformed.x(), transformed.y(), transformed.z());
+        }
+    }
+
 	ImGui::End();
     return redraw_meshes;
 }
@@ -353,29 +541,31 @@ bool Tool::on_mouse_button(int key, input::Action action, int mods)
         Eigen::Vector3f ray_direction = viewer.camera.raycast(ndc_x, ndc_y); // (ray_endpoint - ray_origin).normalized();
 
         // Find the intersection point of the ray with the planes
-        float selected_intersection_distance = std::numeric_limits<float>::max();
-        Detected_plane_segment selected_plane_segment = detected_planes[0];
-
-        for (auto& plane : detected_planes)
+        if (!detected_planes.empty())
         {
-            float intersection_distance = 0.0f;
-            plane.intersect_ray(ray_origin, ray_direction, intersection_distance);
+	        float selected_intersection_distance = std::numeric_limits<float>::max();
+	        Detected_plane_segment selected_plane_segment = detected_planes[0];
 
-            if (intersection_distance < selected_intersection_distance)
-            {
-                selected_intersection_distance = intersection_distance;
-                selected_plane_segment = plane;
-            }
+	        for (auto& plane : detected_planes)
+	        {
+	            float intersection_distance = 0.0f;
+	            plane.intersect_ray(ray_origin, ray_direction, intersection_distance);
+
+	            if (intersection_distance < selected_intersection_distance)
+	            {
+	                selected_intersection_distance = intersection_distance;
+	                selected_plane_segment = plane;
+	            }
+	        }
+	        viewer.add_line(ray_origin, selected_plane_segment.bbox->get_center(), Eigen::Vector3f(0, 0, 1));
         }
 
-        spdlog::info("Deleting {}...", selected_plane_segment.get_uuid());
+        //spdlog::info("Deleting {}...", selected_plane_segment.get_uuid());
         // viewer.get_by_tag(selected_plane_segment.get_uuid())->enabled = false;
 
         // Visualize the ray
-
-
-        //viewer.add_line(ray_origin, ray_origin + ray_direction * 10000, Eigen::Vector3f(1, 0, 0));
-        //viewer.add_line(ray_origin, selected_plane_segment.bbox->get_center(), Eigen::Vector3f(0, 0, 1));
+        viewer.add_line(ray_origin, ray_origin + ray_direction * 10000, Eigen::Vector3f(1, 0, 0));
+        
 
         return false;
     }
