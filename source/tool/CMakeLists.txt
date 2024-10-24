@@ -1,10 +1,7 @@
 add_executable(Tool src/startup.cpp src/pipeline.hpp src/pipeline.cpp
-	include/blast/common.hpp include/blast/tool.hpp include/blast/tool_imgui.hpp include/blast/util.hpp
-	include/blast/internal/assert.hpp include/blast/internal/shader.hpp include/blast/internal/shader_inline.hpp
-	src/camera.cpp src/mesh.cpp src/shader.cpp src/texture.cpp src/util.cpp src/tool.cpp
-	external/stb/stb_image.cpp)
-target_link_libraries(Tool PUBLIC Core OpenGL::GL glfw GLEW::GLEW Eigen3::Eigen imgui::imgui)
-target_include_directories(Tool PUBLIC external)
+	include/blast/tool.hpp
+	src/tool.cpp)
+target_link_libraries(Tool PUBLIC Core Meshview)
 target_include_directories(Tool PUBLIC include)
 
 set_target_properties(Tool PROPERTIES VS_DEBUGGER_ENVIRONMENT "SPDLOG_LEVEL=info")

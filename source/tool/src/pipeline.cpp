@@ -15,7 +15,7 @@
 #include <pcl/search/kdtree.h>
 #include <pcl/surface/poisson.h>
 
-#include "blast/util.hpp"
+//#include "blast/util.hpp"
 
 
 // Define Kernel and types
@@ -45,7 +45,7 @@ namespace pcl
 	struct PointXYZ;
 }
 
-void run_pipeline(const std::string base_pointcloud_file)
+std::vector<Eigen::Vector3f> run_pipeline(const std::string base_pointcloud_file)
 {
 	spdlog::info("Start running pipeline...");
 
@@ -53,33 +53,34 @@ void run_pipeline(const std::string base_pointcloud_file)
 	load_pcl_pointcloud(base_pointcloud_file, base_cloud);
 
 	pcl::PointCloud<pcl::PointXYZ>::Ptr downsampled_cloud(new pcl::PointCloud<pcl::PointXYZ>);
-	downsampled_cloud = base_cloud;
-	//voxelgrid_downsample(base_cloud, downsampled_cloud);
+	//downsampled_cloud = base_cloud;
+	voxelgrid_downsample(base_cloud, downsampled_cloud);
 
-	pcl::PointCloud<pcl::Normal>::Ptr out_normals(new pcl::PointCloud<pcl::Normal>);
-	estimate_normals(downsampled_cloud, out_normals);
+	//pcl::PointCloud<pcl::Normal>::Ptr out_normals(new pcl::PointCloud<pcl::Normal>);
+	//estimate_normals(downsampled_cloud, out_normals);
 
 	// Combine points and normals
-	pcl::PointCloud<pcl::PointNormal>::Ptr cloud_with_normals(new pcl::PointCloud<pcl::PointNormal>);
-	pcl::concatenateFields(*downsampled_cloud, *out_normals, *cloud_with_normals);
+	//pcl::PointCloud<pcl::PointNormal>::Ptr cloud_with_normals(new pcl::PointCloud<pcl::PointNormal>);
+	//pcl::concatenateFields(*downsampled_cloud, *out_normals, *cloud_with_normals);
 
 	pcl::PolygonMesh::Ptr pcl_mesh(new pcl::PolygonMesh);
-	poisson_reconstruction(cloud_with_normals, *pcl_mesh);
+	//poisson_reconstruction(cloud_with_normals, *pcl_mesh);
 
 
-	std::vector<Eigen::Vector3d> skeleton_vertices;
+	std::vector<Eigen::Vector3f> skeleton_vertices;
 
-	if (!skeletonize(*cloud_with_normals, skeleton_vertices))
+	if (!skeletonize(*downsampled_cloud, skeleton_vertices))
 	{
-		return;
+		return {};
 	}
 
+	return skeleton_vertices;
 }
 
-bool skeletonize(pcl::PointCloud<pcl::PointNormal>& cloud_with_normals, std::vector<Eigen::Vector3d> out_skeleton_vertices)
+bool skeletonize(const pcl::PointCloud<pcl::PointXYZ>& input_cloud, std::vector<Eigen::Vector3f>& out_skeleton_vertices)
 {
 	spdlog::info("PCL - Saving point cloud to file");
-	pcl::io::savePLYFileBinary("mesh.ply", cloud_with_normals);
+	pcl::io::savePLYFileBinary("mesh.ply", input_cloud);
 	Point_set points;
 
 	spdlog::info("CGAL - Loading point cloud from file");
@@ -93,17 +94,15 @@ bool skeletonize(pcl::PointCloud<pcl::PointNormal>& cloud_with_normals, std::vec
 	spdlog::info("Read file");
 	spdlog::info("CGAl - Estimating normals");
 	CGAL::jet_estimate_normals<CGAL::Sequential_tag>(points, 24);
-	// Compute average spacing using neighborhood of 6 points
-
+	
 	spdlog::info("CGAl - Average spacing");
-	double spacing = CGAL::compute_average_spacing<CGAL::Sequential_tag>(points, 6);
+	double spacing = CGAL::compute_average_spacing<CGAL::Sequential_tag>(points, 24);
 	// Orientation of normals, returns iterator to first unoriented point
 
-	//spdlog::info("CGAl - Orient normals");
-	//typename Point_set::iterator unoriented_points_begin =
-	//	CGAL::mst_orient_normals(points, 24); // Use 24 neighbors
+	spdlog::info("CGAl - Orient normals");
+	Point_set::iterator unoriented_points_begin = CGAL::mst_orient_normals(points, 24); // Use 24 neighbors
 
-	//points.remove(unoriented_points_begin, points.end());
+	points.remove(unoriented_points_begin, points.end());
 	Surface_mesh mesh;
 
 	spdlog::info("CGAL - Poisson surface reconstruction");
@@ -112,8 +111,7 @@ bool skeletonize(pcl::PointCloud<pcl::PointNormal>& cloud_with_normals, std::vec
 		points.point_map(), points.normal_map(),
 		mesh, spacing);
 	
-	PMP::remove_isolated_vertices(mesh);
-	
+
 	// Check if the mesh has any holes (boundary cycles)
 	if (CGAL::is_closed(mesh)) {
 		spdlog::info("The mesh is closed and bounds a volume.");
@@ -158,7 +156,7 @@ bool skeletonize(pcl::PointCloud<pcl::PointNormal>& cloud_with_normals, std::vec
 	spdlog::info("Skeleton vertices: {}", num_vertices(skeleton));
 	for (Skeleton_vertex e : CGAL::make_range(vertices(skeleton))) {
 		const Point& p = skeleton[e].point;
-		out_skeleton_vertices.push_back(Eigen::Vector3d(p.x(), p.y(), p.z()));
+		out_skeleton_vertices.push_back(Eigen::Vector3f(p.x(), p.y(), p.z()));
 	}
 
 	return true;

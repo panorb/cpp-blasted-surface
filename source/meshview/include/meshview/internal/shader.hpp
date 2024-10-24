@@ -40,6 +40,6 @@ public:
 };
 
 }  // namespace internal
-}  // namespace blast
+}  // namespace meshview
 
 #endif  // ifndef MESHVIEW_SHADER_9845A71E_0422_44A7_9AF9_FAC46ECE9C40

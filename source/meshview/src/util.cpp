@@ -95,4 +95,4 @@ Eigen::Matrix<Index, Eigen::Dynamic, 1> make_uv_to_vert_map(
 }
 
 }  // namespace util
-}  // namespace blast
+}  // namespace meshview

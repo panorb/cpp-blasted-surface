@@ -110,4 +110,17 @@ void Camera::update_proj() {
     }
 }
 
-}  // namespace blast
+	/**
+	 * CUSTOM
+	 ***/
+	Eigen::Vector3f Camera::raycast(float x, float y) const
+	{
+	    Eigen::Vector4f ray_clip(x, y, -1.f, 1.f);
+	    Eigen::Vector4f ray_eye = proj.inverse() * ray_clip;
+	    ray_eye[2] = -1.f;
+	    ray_eye[3] = 0.f;
+	    Eigen::Vector4f ray_world = view.inverse() * ray_eye;
+	    return ray_world.head<3>().normalized();
+	}
+
+}  // namespace meshview

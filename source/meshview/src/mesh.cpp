@@ -87,7 +87,7 @@ void Mesh::resize(size_t num_verts, size_t num_triangles) {
 void Mesh::draw(Index shader_id, const Camera& camera) {
     if (!enabled || data.rows() == 0) return;
     if (!~VAO) {
-        std::cerr << "ERROR: Please call blast::Mesh::update() before "
+        std::cerr << "ERROR: Please call meshview::Mesh::update() before "
                      "Mesh::draw()\n";
         return;
     }
@@ -484,12 +484,12 @@ void Mesh::load_basic_obj(const std::string& path) {
 }
 
 // *** PointCloud ***
-PointCloud::PointCloud(size_t num_verts) : VAO((Index)-1) { resize(num_verts); }
-PointCloud::PointCloud(const Eigen::Ref<const Points>& pos,
+PointCloud::PointCloud(const std::string& tag, size_t num_verts) : VAO((Index)-1), tag(tag) { resize(num_verts); }
+PointCloud::PointCloud(const std::string& tag, const Eigen::Ref<const Points>& pos,
                        const Eigen::Ref<const Points>& rgb)
-    : PointCloud(pos.rows()) {
+    : PointCloud(tag, pos.rows()) {
     if (!pos.rows() || (rgb.rows() && pos.rows() != rgb.rows())) {
-        std::cerr << "Invalid blast::PointCloud construction: "
+        std::cerr << "Invalid meshview::PointCloud construction: "
                      "pos cannot be empty and pos, rgb should have identical # "
                      "rows\n";
         return;
@@ -499,9 +499,9 @@ PointCloud::PointCloud(const Eigen::Ref<const Points>& pos,
         verts_rgb().noalias() = rgb;
     }
 }
-PointCloud::PointCloud(const Eigen::Ref<const Points>& pos, float r, float g,
+PointCloud::PointCloud(const std::string& tag, const Eigen::Ref<const Points>& pos, float r, float g,
                        float b)
-    : PointCloud(pos.rows()) {
+    : PointCloud(tag, pos.rows()) {
     verts_pos().noalias() = pos;
     verts_rgb().rowwise() = Eigen::RowVector3f(r, g, b);
 }
@@ -556,7 +556,7 @@ void PointCloud::update(bool force_init) {
 void PointCloud::draw(Index shader_id, const Camera& camera) {
     if (!enabled) return;
     if (!~VAO) {
-        std::cerr << "ERROR: Please call blast::PointCloud::update() before "
+        std::cerr << "ERROR: Please call meshview::PointCloud::update() before "
                      "PointCloud::draw()\n";
         return;
     }
@@ -586,7 +586,7 @@ void PointCloud::free_bufs() {
 PointCloud PointCloud::Line(const Eigen::Ref<const Vector3f>& a,
                             const Eigen::Ref<const Vector3f>& b,
                             const Eigen::Ref<const Vector3f>& color) {
-    PointCloud tmp(2);
+    PointCloud tmp("line",  2);
     tmp.verts_pos().topRows<1>().noalias() = a;
     tmp.verts_pos().bottomRows<1>().noalias() = b;
     tmp.verts_rgb().rowwise() = color.transpose();
@@ -641,4 +641,4 @@ BOTH_MESH_AND_POINTCLOUD(enable(bool val) {
     return *this;
 })
 
-}  // namespace blast
+}  // namespace meshview

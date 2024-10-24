@@ -109,6 +109,11 @@ class Camera {
     // Projection matrix: view -> clip coords (perspective)
     Matrix4f proj;
 
+    // Raycast
+    // Given normalized device coordinates (x, y) in [-1, 1], return the ray
+    // from camera position to the world
+    Eigen::Vector3f raycast(float x, float y) const;
+
     // Camera mouse control options
     float pan_speed = .0015f, rotate_speed = .008f, scroll_factor = 1.1f;
 
@@ -324,13 +329,15 @@ class Mesh {
 // Also supports drawing the points as a polyline (call draw_lines()).
 class PointCloud {
    public:
-    explicit PointCloud(size_t num_verts = 0);
+    explicit PointCloud(const std::string& tag, size_t num_verts = 0);
     // Set vertices with positions pos with colors rgb
-    explicit PointCloud(const Eigen::Ref<const Points>& pos,
+    explicit PointCloud(const std::string& tag, 
+						const Eigen::Ref<const Points>& pos,
                         const Eigen::Ref<const Points>& rgb);
     // Set all points to same color
     // (can't put Eigen::Vector3f due 'ambiguity' with above)
-    explicit PointCloud(const Eigen::Ref<const Points>& pos, float r = 1.f,
+    explicit PointCloud(const std::string& tag,
+						const Eigen::Ref<const Points>& pos, float r = 1.f,
                         float g = 1.f, float b = 1.f);
 
     ~PointCloud();
@@ -391,6 +398,9 @@ class PointCloud {
         const Eigen::Ref<const Vector3f>& a,
         const Eigen::Ref<const Vector3f>& b,
         const Eigen::Ref<const Vector3f>& color = Vector3f(1.f, 1.f, 1.f));
+
+
+    const std::string tag;
 
     // Data store
     PointsRGB data;
@@ -471,7 +481,9 @@ class Viewer {
         const Eigen::Ref<const Vector3f>& a,
         const Eigen::Ref<const Vector3f>& b,
         const Eigen::Ref<const Vector3f>& color = Vector3f(1.f, 1.f, 1.f));
-    void delete_all(const std::string& tag);
+
+    Mesh* get_by_tag(const std::string& tag);
+	void delete_all(const std::string& tag);
 
     // * The meshes
     std::vector<std::unique_ptr<Mesh>> meshes;
@@ -506,7 +518,7 @@ class Viewer {
     // * Aesthetics
     // Window title, updated on show() calls only (i.e. please set before
     // show())
-    std::string title = "blast";
+    std::string title = "meshview";
 
     // Background color
     Vector3f background;
@@ -567,6 +579,6 @@ class Viewer {
     bool _looping = false;
 };
 
-}  // namespace blast
+}  // namespace meshview
 
 #endif  // ifndef MESHVIEW_B1FE2D07_A12E_4C8B_A673_D9AC48841D24

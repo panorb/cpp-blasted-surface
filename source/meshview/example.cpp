@@ -170,7 +170,7 @@ int main(int argc, char** argv) {
     };
 #else
     std::cout
-        << "blast was built without Dear ImGUI, no GUI will be available\n";
+        << "meshview was built without Dear ImGUI, no GUI will be available\n";
 #endif
     viewer.show();
 }

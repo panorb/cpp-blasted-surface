@@ -488,8 +488,10 @@ int main(int argc, char** argv)
                     points.row(i)(2) = plane.sample_points[i][2];
                 }
 
-                // viewer.add_point_cloud(points, std::min(plane.bbox->color_.x() + 0.2f, 1.0f), plane.bbox->color_.y(), plane.bbox->color_.z());
-                redraw_meshes = true;
+                viewer.add_point_cloud(points, std::min(plane.bbox->color_.x() + 0.2f, 1.0f), plane.bbox->color_.y(), plane.bbox->color_.z());
+
+
+				redraw_meshes = true;
 			}
         }
 

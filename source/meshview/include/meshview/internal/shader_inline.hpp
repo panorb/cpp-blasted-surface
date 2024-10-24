@@ -148,6 +148,6 @@ void main(){
 }
 )SHADER";
 
-}  // namespace blast
+}  // namespace meshview
 
 #endif  // ifndef VIEWER_SHADER_INLINE_91D27C05_59C0_4F9F_A6C5_6AA9E2000CDA

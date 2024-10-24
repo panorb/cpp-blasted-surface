@@ -9,6 +9,8 @@
 #include "meshview/util.hpp"
 #include "meshview/internal/shader.hpp"
 // Inlined shader code
+#include <optional>
+
 #include "meshview/internal/shader_inline.hpp"
 
 #ifdef MESHVIEW_IMGUI
@@ -207,7 +209,7 @@ Viewer::~Viewer() { glfwTerminate(); }
 
 void Viewer::show() {
     GLFWwindow* window =
-        glfwCreateWindow(_width, _height, "blast", NULL, NULL);
+        glfwCreateWindow(_width, _height, "meshview", NULL, NULL);
     if (!window) {
         glfwTerminate();
         std::cerr << "GLFW window creation failed\n";
@@ -254,7 +256,7 @@ void Viewer::show() {
                                POINTCLOUD_FRAGMENT_SHADER);
 
     // Construct axes object
-    PointCloud axes(Eigen::template Map<const Points>{axes_verts, 6, 3},
+    PointCloud axes("axes", Eigen::template Map<const Points>{axes_verts, 6, 3},
                     Eigen::template Map<const Points>{axes_rgb, 6, 3});
     axes.draw_lines();
     axes.update(true);
@@ -414,15 +416,52 @@ PointCloud& Viewer::add_line(const Eigen::Ref<const Vector3f>& a,
     return add_point_cloud(PointCloud::Line(a, b, color));
 }
 
-void Viewer::delete_all(const std::string& tag)
+Mesh* Viewer::get_by_tag(const std::string& tag)
 {
-    for (auto mesh_it = meshes.begin(); mesh_it != meshes.end(); ++mesh_it)
+    for (auto mesh_it = meshes.begin(); mesh_it != meshes.end();)
     {
         if (mesh_it->get()->tag == tag)
         {
-            mesh_it = meshes.erase(mesh_it);
+            return mesh_it->get();
+        }
+        else
+        {
+            ++mesh_it;
         }
     }
+
+    return nullptr;
 }
 
-}  // namespace blast
+void Viewer::delete_all(const std::string& tag)
+{
+    for (auto mesh_it = meshes.begin(); mesh_it != meshes.end();)
+    {
+        if (mesh_it->get()->tag == tag)
+        {
+        	mesh_it = meshes.erase(mesh_it);
+        } else
+        {
+        	++mesh_it;
+        }
+    }
+
+    for (auto pc_it = point_clouds.begin(); pc_it != point_clouds.end();)
+    {
+        if (pc_it->get()->tag == tag)
+        {
+            pc_it = point_clouds.erase(pc_it);
+        }
+        else
+        {
+            ++pc_it;
+        }
+    }
+
+    for (auto& mesh : meshes) mesh->update(true);
+    for (auto& pc : point_clouds) pc->update(true);
+    camera.update_proj();
+    camera.update_view();
+}
+
+}  // namespace meshview

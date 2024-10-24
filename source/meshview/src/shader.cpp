@@ -125,7 +125,7 @@ void Shader::set_mat4(const std::string &name, const Eigen::Ref<const Matrix4f> 
     glUniformMatrix4fv(glGetUniformLocation(id, name.c_str()), 1, GL_FALSE, mat.data());
 }
 }  // namespace internal
-}  // namespace blast
+}  // namespace meshview
 
 #include <fstream>
 #include <sstream>
