@@ -47,13 +47,42 @@ std::vector<Eigen::Vector3f> skeleton_vertices;
 std::vector<Eigen::Vector3f> total_path;
 
 Eigen::Vector3f line1_start = { 0.0f, 0.0f, 0.0f };
-Eigen::Vector3f line1_end = { 0.0f, 880.0f, 0.0f };
+Eigen::Vector3f line1_end = { 0.0f, 110.0f, 0.0f };
 Eigen::Vector3f line2_start = { -420.0f, -745.0f, 565.0f };
 Eigen::Vector3f line2_end = { -342.22f, -822.78, 565.0f };
 Eigen::Vector3f scanner_offset = { 0.0f, 0.0f, 0.0f };
 
-Eigen::Vector3f transform_point(Eigen::Vector3f pt, Eigen::Vector3f line1_start, Eigen::Vector3f line1_end, Eigen::Vector3f line2_start, Eigen::Vector3f line2_end, Eigen::Vector3f scanner_offset) {
-    return pt;
+Eigen::Matrix4f calculate_transformation_matrix(Eigen::Vector3f line1_start, Eigen::Vector3f line1_end, Eigen::Vector3f line2_start, Eigen::Vector3f line2_end, Eigen::Vector3f scanner_offset) {
+
+    // This will move line 1s start to coincide with line 2
+	Eigen::Vector3f start_transdlation = line2_start - line1_start;
+
+    Eigen::Vector3f line1_direction = line1_end - line1_start;
+	Eigen::Vector3f line2_direction = line2_end - line2_start;
+
+    spdlog::info("Length of line 1: {0:.2f}", line1_direction.norm());
+    spdlog::info("Length of line 2: {0:.2f}", line2_direction.norm());
+
+	float scaling_factor = line2_direction.norm() / line1_direction.norm();
+
+    Eigen::Vector3f line1_direction_normalized = line1_direction.normalized();
+	Eigen::Vector3f line2_direction_normalized = line2_direction.normalized();
+
+    // Compute rotation axis
+	Eigen::Vector3f rotation_axis = line1_direction_normalized.cross(line2_direction_normalized);
+
+    // Compute the rotation angle between the two direction vectors using the dot product
+	float rotation_angle = std::acos(line1_direction_normalized.dot(line2_direction_normalized));
+
+	// Compute the rotation matrix R (Rodrigues' rotation formula)
+	Eigen::Matrix3f R = Eigen::AngleAxisf(rotation_angle, rotation_axis).toRotationMatrix();
+
+	// Compute full transformation matrix (including rotation & translation)
+	Eigen::Matrix4f T = Eigen::Matrix4f::Identity();
+	T.block<3, 3>(0, 0) = scaling_factor * R;
+	T.block<3, 1>(0, 3) = start_transdlation;
+
+	return T;
 }
 
 bool Tool::on_gui()
@@ -367,7 +396,7 @@ bool Tool::on_gui()
 			plane.local_path = path;
 
             // Prepare outputting resulting path index sequence e.g. 0 -> 1 -> 2 -> 3
-            std::string r = "";
+            /* std::string r = "";
 
             for (auto& node : path)
             {
@@ -376,7 +405,7 @@ bool Tool::on_gui()
 
             // Remove last arrow from output string
             r = r.substr(0, r.size() - 4);
-            spdlog::info("Path: {0}", r);
+            spdlog::info("Path: {0}", r); */
 
             // Draw path in viewer
             for (int j = 0; j < path.size() - 1; ++j)
@@ -499,10 +528,12 @@ bool Tool::on_gui()
 
     if (ImGui::Button("Ausgabe in G-Code"))
     {
+        Eigen::Matrix4f transformation_matrix = calculate_transformation_matrix(line1_start, line1_end, line2_start, line2_end, scanner_offset);
+
         spdlog::info("G-Code:");
         for (auto pt : total_path)
         {
-            Eigen::Vector3f transformed = blast::transform_point(pt, line1_start, line1_end, line2_start, line2_end, scanner_offset);
+            Eigen::Vector3f transformed = (transformation_matrix * pt.homogeneous()).hnormalized();
             spdlog::info("G01 X={0:.2f} Y={1:.2f} Z={2:.2f} A=-0.0 B=-0.0 C=45.0 F=200.0", transformed.x(), transformed.y(), transformed.z());
         }
     }

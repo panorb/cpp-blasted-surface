@@ -32,12 +32,12 @@ std::vector<size_t> blast::Greedy_optimizer::execute()
 
 		for (size_t i : unvisited_nodes)
 		{
-			float distance = node_graph->get_edge_weight(current_node, i).value_or(std::numeric_limits<float>::max());
+			float cost = node_graph->get_edge_weight(current_node, i).value_or(std::numeric_limits<float>::max());
 
 			float angle_bias = 50.0f;
 
 			// If the angle bias is enabled, calculate the angle between the current node and the next node
-			if (angle_bias > 0.0 && solution.size() >= 1)
+			if (angle_bias > 0.0 && !solution.empty())
 			{
 				Eigen::Vector3f current_node_position = points[current_node];
 				Eigen::Vector3f next_node_position = points[i];
@@ -51,13 +51,13 @@ std::vector<size_t> blast::Greedy_optimizer::execute()
 
 				float angle = std::acos(current_to_next.dot(current_to_previous));
 
-				distance += angle * angle_bias;
+				cost += angle * angle_bias;
 			}
 
 
-			if (distance < min_distance)
+			if (cost < min_distance)
 			{
-				min_distance = distance;
+				min_distance = cost;
 				nearest_node = i;
 			}
 		}
