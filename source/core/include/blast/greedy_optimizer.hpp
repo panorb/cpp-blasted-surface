@@ -12,6 +12,6 @@ private:
 	const std::vector<Eigen::Vector3f> points;
 public:
 	Greedy_optimizer(const Graph* node_graph, const std::vector<Eigen::Vector3f> points) : node_graph(node_graph), points(points) {};
-	std::vector<size_t> execute();
+	std::vector<size_t> execute() const;
 };
 }

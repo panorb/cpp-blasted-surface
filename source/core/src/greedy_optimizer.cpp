@@ -1,8 +1,9 @@
 #include "blast/greedy_optimizer.hpp"
 
 #include <set>
+#include <spdlog/spdlog.h>
 
-std::vector<size_t> blast::Greedy_optimizer::execute()
+std::vector<size_t> blast::Greedy_optimizer::execute() const
 {
 	// Initialize the solution vector
 	std::vector<size_t> solution;
@@ -49,9 +50,16 @@ std::vector<size_t> blast::Greedy_optimizer::execute()
 				current_to_next.normalize();
 				current_to_previous.normalize();
 
-				float angle = std::acos(current_to_next.dot(current_to_previous));
 
-				cost += angle * angle_bias;
+
+				float dot_product = current_to_next.dot(current_to_previous);
+
+				spdlog::info("Current to next: {}, {}, {}", current_to_next.x(), current_to_next.y(), current_to_next.z());
+				spdlog::info("Current to previous: {}, {}, {}", current_to_previous.x(), current_to_previous.y(), current_to_previous.z());
+
+				spdlog::info("Punktprodukt (inv.): {}", 1.0f - dot_product);
+
+				cost += (1.0f - dot_product) * angle_bias;
 			}
 
 

@@ -26,6 +26,12 @@ public:
 	void from_arrays(std::vector<Eigen::Vector3d> points, std::vector<Eigen::Vector3d> normals);
 	virtual const std::vector<std::shared_ptr<Oriented_bounding_box>> execute();
 	virtual void render_controls();
+
+	float normal_similarity_deg_ = 60.f;
+	float coplanarity_deg_ = 75;
+	float outlier_ratio_ = 0.75f;
+	float min_plane_edge_length_ = 0.0f;
+	int min_num_points_ = 0;
 private:
 	const std::vector<std::shared_ptr<Oriented_bounding_box>> detect_planar_patches();
 	bool split_and_detect_planes_recursive(
@@ -46,10 +52,4 @@ private:
 	void extract_patches_from_planes(
 		const std::vector<PlaneDetectorPtr>& planes,
 		std::vector<std::shared_ptr<Oriented_bounding_box>>& patches);
-
-	float normal_similarity_deg_ = 60.f;
-	float coplanarity_deg_ = 75;
-	float outlier_ratio_ = 0.75f;
-	float min_plane_edge_length_ = 0.0f;
-	int min_num_points_ = 0;
 };

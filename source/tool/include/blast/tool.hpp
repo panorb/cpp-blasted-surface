@@ -1,5 +1,5 @@
 #pragma once
-#define _USE_MATH_DEFINES
+#include "blast/planes/oliveira_planes.hpp"
 #include "meshview/meshview.hpp"
 
 namespace blast {
@@ -15,8 +15,12 @@ public:
         viewer.on_mouse_button = std::bind(&Tool::on_mouse_button, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
         viewer.on_mouse_move = std::bind(&Tool::on_mouse_move, this, std::placeholders::_1, std::placeholders::_2);
         viewer.on_scroll = std::bind(&Tool::on_scroll, this, std::placeholders::_1, std::placeholders::_2);
+        viewer.camera.center_of_rot = Vector3f(0, 0, 150);
     };
     void show();
+
+    std::string selected_example_file = "knochen-komplett.pcd";
+    Oliveira_plane_segmenter plane_segmenter;
 private:
     blast::Viewer viewer;
     // * Event callbacks

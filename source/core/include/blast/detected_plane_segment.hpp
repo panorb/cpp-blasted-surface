@@ -19,39 +19,43 @@ struct Detected_plane_segment
 
 	bool intersect_ray(const Eigen::Vector3f& ray_origin, const Eigen::Vector3f& ray_direction, float& intersection_distance)
 	{
-		Eigen::Matrix3f R = bbox->R_;
-		Eigen::Vector3f center = bbox->center_;
-		Eigen::Vector3f inv_dir = 1.0f / ray_direction.array();
-		Eigen::Vector3f extent = bbox->extent_;
+		Eigen::Vector3f dir = ray_direction.normalized();
+		Eigen::Vector3f p = bbox->get_center() - ray_origin;
+		Eigen::Vector3f half_extent = bbox->extent_ / 2.0f;
 
-		Eigen::Vector3f T = R * (ray_origin - center);
+		float t_min = -std::numeric_limits<float>::infinity();
+		float t_max = std::numeric_limits<float>::infinity();
 
-		float tmin = (extent[0] - T[0]) * inv_dir[0];
-		float tmax = (extent[0] + T[0]) * inv_dir[0];
-
-		for (int i = 1; i < 3; i++)
+		for (int i = 0; i < 3; i++)
 		{
-			float t1 = (extent[i] - T[i]) * inv_dir[i];
-			float t2 = (extent[i] + T[i]) * inv_dir[i];
+			Eigen::Vector3f axis = bbox->R_.col(i);  // Local OBB axis
+			float e = axis.dot(p);               // Projection of p onto axis
+			float f = axis.dot(dir);             // Projection of ray direction onto axis
 
-			tmin = std::max(tmin, std::min(t1, t2));
-			tmax = std::min(tmax, std::max(t1, t2));
+			if (std::abs(f) > 1e-6) {  // Check if ray is not parallel to the OBB plane
+				float t1 = (e + half_extent[i]) / f;
+				float t2 = (e - half_extent[i]) / f;
+
+				// Ensure t1 is the entry point and t2 is the exit point
+				if (t1 > t2) std::swap(t1, t2);
+
+				// Update t_min and t_max for the intersection interval
+				t_min = std::max(t_min, t1);
+				t_max = std::min(t_max, t2);
+
+				// If the intervals do not overlap, there is no intersection
+				if (t_min > t_max) return false;
+			}
+			else {
+				// Ray is parallel to the OBB's plane; check if ray origin is within the extent along this axis
+				if (-e - half_extent[i] > 0 || -e + half_extent[i] < 0) {
+					return false;  // Ray is outside OBB on this axis
+				}
+			}
 		}
 
-		if (tmax < 0)
-		{
-			return false;
-		}
-
-		// TODO: Calculate distance from ray_origin to intersection
-		if (tmin <= tmax)
-		{
-			// Calculate intersection point
-			intersection_distance = tmin;
-			return true;
-		}
-
-		return false;
+		intersection_distance = t_min;
+		return true;
 	}
 
 	const std::string& get_uuid()

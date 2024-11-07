@@ -16,6 +16,8 @@ find_package(GLEW CONFIG REQUIRED)
 find_package(Eigen3 CONFIG REQUIRED)
 find_package(imgui CONFIG REQUIRED)
 find_package(CGAL CONFIG REQUIRED)
+# pkg_check_modules(tomlplusplus REQUIRED IMPORTED_TARGET tomlplusplus)
+find_package(tomlplusplus)
 
 include_directories(${PCL_INCLUDE_DIRS})
 link_directories(${PCL_LIBRARY_DIRS})

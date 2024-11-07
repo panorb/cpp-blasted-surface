@@ -22,6 +22,7 @@ std::vector<Eigen::Vector3f> sample_points_on_grid(Detected_plane_segment& plane
 	int x_axis_num = x_axis_length / grid_size;
 	int y_axis_num = y_axis_length / grid_size;
 
+
 	std::vector<Eigen::Vector3f> sample_points;
 
 	for (int i = 0; i < x_axis_num; i++)

@@ -1,7 +1,7 @@
 add_executable(Tool src/startup.cpp src/pipeline.hpp src/pipeline.cpp
 	include/blast/tool.hpp
 	src/tool.cpp)
-target_link_libraries(Tool PUBLIC Core Meshview)
+target_link_libraries(Tool PUBLIC Core Meshview tomlplusplus)
 target_include_directories(Tool PUBLIC include)
 
 set_target_properties(Tool PROPERTIES VS_DEBUGGER_ENVIRONMENT "SPDLOG_LEVEL=info")

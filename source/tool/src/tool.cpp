@@ -1,6 +1,8 @@
 #include "blast/tool.hpp"
 
 #include <filesystem>
+#include <iostream>
+#include <fstream>
 #include <GLFW/glfw3.h>
 
 #include "blast/detected_plane_segment.hpp"
@@ -36,14 +38,12 @@ bool Tool::on_loop()
 }
 
 std::vector<std::string> example_files;
-std::string selected_example_file = "knochen-komplett.pcd";
 std::deque<Detected_plane_segment> detected_planes;
 std::unique_ptr<blast::Point_cloud> base_point_cloud = nullptr;
 size_t base_point_cloud_index = 0;
 Oliveira_plane_segmenter oliveira_planes;
 
 std::vector<Eigen::Vector3f> skeleton_vertices;
-
 std::vector<Eigen::Vector3f> total_path;
 
 Eigen::Vector3f line1_start = { 0.0f, 0.0f, 0.0f };
@@ -530,11 +530,14 @@ bool Tool::on_gui()
     {
         Eigen::Matrix4f transformation_matrix = calculate_transformation_matrix(line1_start, line1_end, line2_start, line2_end, scanner_offset);
 
+        std::ofstream ofstream;
+        ofstream.open("./output.txt");
+
         spdlog::info("G-Code:");
         for (auto pt : total_path)
         {
             Eigen::Vector3f transformed = (transformation_matrix * pt.homogeneous()).hnormalized();
-            spdlog::info("G01 X={0:.2f} Y={1:.2f} Z={2:.2f} A=-0.0 B=-0.0 C=45.0 F=200.0", transformed.x(), transformed.y(), transformed.z());
+            ofstream << std::format("G01 X={0:.2f} Y={1:.2f} Z={2:.2f} A=-0.0 B=-0.0 C=45.0 F=200.0\n", transformed.x(), transformed.y(), transformed.z()).c_str();
         }
     }
 
@@ -568,14 +571,14 @@ bool Tool::on_mouse_button(int key, input::Action action, int mods)
 
         spdlog::debug("ndc_x: {}, ndc_y: {}", ndc_x, ndc_y);
 
-        // Calculate the ray direction by subtracting the ray origin from the ray endpoint
-        Eigen::Vector3f ray_direction = viewer.camera.raycast(ndc_x, ndc_y); // (ray_endpoint - ray_origin).normalized();
+        // Calculate the ray direction
+        Eigen::Vector3f ray_direction = viewer.camera.raycast(ndc_x, ndc_y);
 
         // Find the intersection point of the ray with the planes
         if (!detected_planes.empty())
         {
 	        float selected_intersection_distance = std::numeric_limits<float>::max();
-	        Detected_plane_segment selected_plane_segment = detected_planes[0];
+	        Detected_plane_segment* selected_plane_segment = nullptr;
 
 	        for (auto& plane : detected_planes)
 	        {
@@ -585,10 +588,16 @@ bool Tool::on_mouse_button(int key, input::Action action, int mods)
 	            if (intersection_distance < selected_intersection_distance)
 	            {
 	                selected_intersection_distance = intersection_distance;
-	                selected_plane_segment = plane;
+	                selected_plane_segment = &plane;
 	            }
+
+
 	        }
-	        viewer.add_line(ray_origin, selected_plane_segment.bbox->get_center(), Eigen::Vector3f(0, 0, 1));
+
+            if (selected_plane_segment)
+            {
+				viewer.add_line(ray_origin, selected_plane_segment->bbox->get_center(), Eigen::Vector3f(0, 0, 1));
+            }
         }
 
         //spdlog::info("Deleting {}...", selected_plane_segment.get_uuid());
