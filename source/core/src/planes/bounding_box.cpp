@@ -55,6 +55,10 @@ Oriented_bounding_box& Oriented_bounding_box::rotate(
     return *this;
 }
 
+double Oriented_bounding_box::area() const{
+    return extent_(0) * extent_(1);
+}
+
 double Oriented_bounding_box::volume() const {
     return extent_(0) * extent_(1) * extent_(2);
 }

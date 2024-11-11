@@ -37,7 +37,7 @@ private:
 	bool split_and_detect_planes_recursive(
 		const BoundaryVolumeHierarchyPtr& node,
 		std::vector<PlaneDetectorPtr>& planes,
-		std::vector<PlaneDetectorPtr>& plane_points);
+		std::vector<PlaneDetectorPtr>& plane_points, float real_min_plane_edge_length, int real_min_num_points);
 	void grow(
 		std::vector<PlaneDetectorPtr>& planes,
 		std::vector<PlaneDetectorPtr>& plane_points,

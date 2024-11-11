@@ -14,6 +14,7 @@ namespace blast
 		explicit Point_cloud(const std::vector<Eigen::Vector3d>& points) : points(points) {};
 		const std::vector<Eigen::Vector3d>& get_points() const;
 		const std::vector<Eigen::Vector3f> get_points_f() const;
+		void extract_indices(const std::vector<size_t>& vector, bool negative);
 
 		static std::unique_ptr<Point_cloud> load_pcd_file(const std::string& file_path);
 		static std::unique_ptr<Point_cloud> load_ply_file(const std::string& file_path);

@@ -5,6 +5,7 @@
 
 std::vector<size_t> blast::Greedy_optimizer::execute() const
 {
+	spdlog::info("what is happening");
 	// Initialize the solution vector
 	std::vector<size_t> solution;
 	solution.reserve(node_graph->get_node_count());
@@ -17,11 +18,10 @@ std::vector<size_t> blast::Greedy_optimizer::execute() const
 	}
 
 	// Start at the first node
-	size_t current_node = 0;
-	solution.push_back(current_node);
+	solution.push_back(0);
 
 	// Remove the first node from the unvisited set
-	unvisited_nodes.erase(current_node);
+	unvisited_nodes.erase(0);
 
 	// While there are still unvisited nodes
 	while (!unvisited_nodes.empty())
@@ -33,24 +33,34 @@ std::vector<size_t> blast::Greedy_optimizer::execute() const
 
 		for (size_t i : unvisited_nodes)
 		{
-			float cost = node_graph->get_edge_weight(current_node, i).value_or(std::numeric_limits<float>::max());
+			float cost = node_graph->get_edge_weight(solution[solution.size() - 1], i).value_or(std::numeric_limits<float>::max());
 
 			float angle_bias = 50.0f;
 
 			// If the angle bias is enabled, calculate the angle between the current node and the next node
-			if (angle_bias > 0.0 && !solution.empty())
+			if (angle_bias > 0.0 && solution.size() >= 2)
 			{
-				Eigen::Vector3f current_node_position = points[current_node];
+				Eigen::Vector3f previous_node_position = points[solution[solution.size() - 2]];
+				Eigen::Vector3f current_node_position = points[solution[solution.size() - 1]];
 				Eigen::Vector3f next_node_position = points[i];
-				Eigen::Vector3f previous_node_position = points[solution[solution.size() - 1]];
+
+				spdlog::info("== Path so far: ==");
+				for (auto& st_pt : solution)
+				{
+					spdlog::info("({}, {}, {})", points[st_pt].x(), points[st_pt].y(), points[st_pt].z());
+				}
+				spdlog::info("==================");
+
+				// Log the 3 positions to spdlog
+				spdlog::info("Previous node position: {}, {}, {}", previous_node_position.x(), previous_node_position.y(), previous_node_position.z());
+				spdlog::info("Current node position: {}, {}, {}", current_node_position.x(), current_node_position.y(), current_node_position.z());
+				spdlog::info("Next node position: {}, {}, {}", next_node_position.x(), next_node_position.y(), next_node_position.z());
 
 				Eigen::Vector3f current_to_next = next_node_position - current_node_position;
 				Eigen::Vector3f current_to_previous = previous_node_position - current_node_position;
 
 				current_to_next.normalize();
 				current_to_previous.normalize();
-
-
 
 				float dot_product = current_to_next.dot(current_to_previous);
 
@@ -72,9 +82,6 @@ std::vector<size_t> blast::Greedy_optimizer::execute() const
 
 		// Add the nearest node to the solution
 		solution.push_back(nearest_node);
-
-		// Update the current node
-		current_node = nearest_node;
 
 		// Remove the nearest node from the unvisited set
 		unvisited_nodes.erase(nearest_node);

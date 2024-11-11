@@ -54,6 +54,33 @@ const std::vector<Eigen::Vector3f> blast::Point_cloud::get_points_f() const
 	return points_f;
 }
 
+void blast::Point_cloud::extract_indices(const std::vector<size_t>& vector, bool negative = false)
+{
+	if (negative)
+	{
+		std::vector<Eigen::Vector3d> new_points;
+		new_points.reserve(points.size() - vector.size());
+		for (size_t i = 0; i < points.size(); ++i)
+		{
+			if (std::find(vector.begin(), vector.end(), i) == vector.end())
+			{
+				new_points.push_back(points[i]);
+			}
+		}
+		points = new_points;
+	}
+	else
+	{
+		std::vector<Eigen::Vector3d> new_points;
+		new_points.reserve(vector.size());
+		for (size_t i : vector)
+		{
+			new_points.push_back(points[i]);
+		}
+		points = new_points;
+	}
+}
+
 std::unique_ptr<blast::Point_cloud> from_pcl_point_cloud(const pcl::PointCloud<pcl::PointXYZ>& pcl_cloud)
 {
 	std::vector<Eigen::Vector3d> points;

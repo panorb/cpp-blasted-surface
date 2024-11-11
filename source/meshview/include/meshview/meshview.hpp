@@ -395,6 +395,7 @@ class PointCloud {
 
     // * Example point clouds/lines
     static PointCloud Line(
+        const std::string& tag,
         const Eigen::Ref<const Vector3f>& a,
         const Eigen::Ref<const Vector3f>& b,
         const Eigen::Ref<const Vector3f>& color = Vector3f(1.f, 1.f, 1.f));
@@ -478,6 +479,7 @@ class Viewer {
     // Add a line (PointCloud with line rendering).
     // Point cloud will have identity transform (not translated or scaled)
     PointCloud& add_line(
+        const std::string& tag,
         const Eigen::Ref<const Vector3f>& a,
         const Eigen::Ref<const Vector3f>& b,
         const Eigen::Ref<const Vector3f>& color = Vector3f(1.f, 1.f, 1.f));

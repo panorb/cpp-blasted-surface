@@ -583,10 +583,11 @@ void PointCloud::free_bufs() {
     if (~VBO) glDeleteBuffers(1, &VBO);
 }
 
-PointCloud PointCloud::Line(const Eigen::Ref<const Vector3f>& a,
+PointCloud PointCloud::Line(const std::string& tag,
+							const Eigen::Ref<const Vector3f>& a,
                             const Eigen::Ref<const Vector3f>& b,
                             const Eigen::Ref<const Vector3f>& color) {
-    PointCloud tmp("line",  2);
+    PointCloud tmp(tag,  2);
     tmp.verts_pos().topRows<1>().noalias() = a;
     tmp.verts_pos().bottomRows<1>().noalias() = b;
     tmp.verts_rgb().rowwise() = color.transpose();

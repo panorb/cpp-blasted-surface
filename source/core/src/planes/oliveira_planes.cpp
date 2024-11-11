@@ -20,17 +20,21 @@ const std::vector<std::shared_ptr<Oriented_bounding_box>> Oliveira_plane_segment
 	SPoint max_bound;
 	
 	pcl::getMinMax3D(*point_cloud_, min_bound, max_bound);
-	
+
+	float real_min_plane_edge_length = min_plane_edge_length_;
+
 	if (min_plane_edge_length_ <= 0) {
-		min_plane_edge_length_ = 0.01 * (max_bound.getVector3fMap() - min_bound.getVector3fMap()).maxCoeff();
+		real_min_plane_edge_length = 0.01 * (max_bound.getVector3fMap() - min_bound.getVector3fMap()).maxCoeff();
 	}
 
 	spdlog::info("min_bound: {0:f}, {1:f}, {2:f}", min_bound.x, min_bound.y, min_bound.z);
 	spdlog::info("max_bound: {0:f}, {1:f}, {2:f}", max_bound.x, max_bound.y, max_bound.z);
 
+	int real_min_num_points = min_num_points_;
+
 	if (min_num_points_ == 0) {
 		
-		min_num_points_ = std::max(static_cast<size_t>(10),
+		real_min_num_points = std::max(static_cast<size_t>(10),
 			static_cast<size_t>(point_cloud_->points.size() * 0.001));
 	}
 
@@ -78,7 +82,7 @@ const std::vector<std::shared_ptr<Oriented_bounding_box>> Oliveira_plane_segment
 		point_cloud_.get(), normal_cloud_.get(), min_bound.getVector3fMap(), max_bound.getVector3fMap());
 	std::vector<PlaneDetectorPtr> planes;
 	std::vector<PlaneDetectorPtr> plane_points(point_cloud_->points.size(), nullptr);
-	split_and_detect_planes_recursive(root, planes, plane_points);
+	split_and_detect_planes_recursive(root, planes, plane_points, real_min_plane_edge_length, real_min_num_points);
 
 	bool changed;
 	do {
@@ -101,7 +105,10 @@ const std::vector<std::shared_ptr<Oriented_bounding_box>> Oliveira_plane_segment
 bool Oliveira_plane_segmenter::split_and_detect_planes_recursive(
 	const BoundaryVolumeHierarchyPtr& node,
 	std::vector<PlaneDetectorPtr>& planes,
-	std::vector<PlaneDetectorPtr>& plane_points) {
+	std::vector<PlaneDetectorPtr>& plane_points,
+	float real_min_plane_edge_length,
+	int real_min_num_points
+	) {
 	spdlog::info("split_and_detect_planes_recursive");
 	// Grad in Radian umrechnen
 	const float normal_similarity_rad = normal_similarity_deg_ * M_PI / 180.0;
@@ -113,7 +120,7 @@ bool Oliveira_plane_segmenter::split_and_detect_planes_recursive(
 
 	// Wenn weniger als die minmale Anzahl an Punkten in der Node
 	// vorhanden sind, kann keine Ebene erzeugt werden
-	if (node->indices_.size() < min_num_points_) return false;
+	if (node->indices_.size() < real_min_num_points) return false;
 
 	bool node_has_plane = false;
 	bool child_has_plane = false;
@@ -122,7 +129,7 @@ bool Oliveira_plane_segmenter::split_and_detect_planes_recursive(
 
 	for (const auto& child : node->children_) {
 		if (child != nullptr &&
-			split_and_detect_planes_recursive(child, planes, plane_points)) {
+			split_and_detect_planes_recursive(child, planes, plane_points, real_min_plane_edge_length, real_min_num_points)) {
 			child_has_plane = true;
 		}
 	}
@@ -130,7 +137,7 @@ bool Oliveira_plane_segmenter::split_and_detect_planes_recursive(
 	if (!child_has_plane && node->level_ > 2) {
 		auto plane = std::make_shared<Plane_detector>(normal_similiarity,
 			coplanarity, outlier_ratio_,
-			min_plane_edge_length_);
+			real_min_plane_edge_length);
 		if (plane->detect_from_point_cloud(node->point_cloud_, node->normal_cloud_, node->indices_)) {
 			node_has_plane = true;
 			planes.push_back(plane);

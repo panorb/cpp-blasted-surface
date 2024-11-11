@@ -8,9 +8,7 @@
 #include "blast/detected_plane_segment.hpp"
 #include "blast/point_cloud.hpp"
 #include "blast/planes/oliveira_planes.hpp"
-#include <pcl/common/io.h>
 #include <pcl/io/ply_io.h>
-#include <pcl/surface/poisson.h>
 
 #include "pipeline.hpp"
 #include "blast/greedy_optimizer.hpp"
@@ -41,7 +39,6 @@ std::vector<std::string> example_files;
 std::deque<Detected_plane_segment> detected_planes;
 std::unique_ptr<blast::Point_cloud> base_point_cloud = nullptr;
 size_t base_point_cloud_index = 0;
-Oliveira_plane_segmenter oliveira_planes;
 
 std::vector<Eigen::Vector3f> skeleton_vertices;
 std::vector<Eigen::Vector3f> total_path;
@@ -154,15 +151,15 @@ bool Tool::on_gui()
 
     ImGui::SeparatorText("Oliveira Plane Segmentation");
 
-    oliveira_planes.render_controls();
+    plane_segmenter.render_controls();
     if (ImGui::Button("Oliveira: Extract Planes"))
     {
         std::vector<Eigen::Vector3d> points = base_point_cloud->get_points();
         std::vector<Eigen::Vector3d> normals = base_point_cloud->estimate_normals(25.f);
 
-        oliveira_planes.from_arrays(points, normals);
+        plane_segmenter.from_arrays(points, normals);
 
-        auto planes = oliveira_planes.execute();
+        auto planes = plane_segmenter.execute();
 
         viewer.delete_all("base");
 
@@ -229,18 +226,26 @@ bool Tool::on_gui()
 
     if (ImGui::Button("Remove last plane"))
     {
-        if (detected_planes.begin() != detected_planes.end())
+        std::deque<Detected_plane_segment>::iterator max_area_it;
+        float max_area = 0.0f;
+
+        for (auto it = detected_planes.begin(); it != detected_planes.end(); ++it)
         {
 			auto detected_plane = detected_planes.front();
-	        //detected_plane.bbox->color_ = Eigen::Vector3f(1.0, 0.0, 0.0);
 
-	        viewer.delete_all(detected_plane.get_uuid());
-	        detected_planes.pop_front();
-
-        } else
-        {
-            spdlog::warn("No planes to remove. Reached end of array...");
+            if (detected_plane.bbox->area() > max_area)
+            {
+				max_area_it = it;
+                max_area = detected_plane.bbox->area();
+            }
         }
+
+        spdlog::info("Erasing plane with biggest area of {}", max_area);
+
+        //std::vector<size_t> indices = max_area_it->bbox->get_point_indices_within_bounding_box(base_point_cloud->get_points_f());
+        //base_point_cloud->extract_indices(indices, true);
+        viewer.delete_all("plane_" + std::to_string(max_area_it - detected_planes.begin()));
+        detected_planes.erase(max_area_it);
 
         redraw_meshes = true;
     }
@@ -304,22 +309,43 @@ bool Tool::on_gui()
             plane.normal = normal;
 
             // Draw normal
-            viewer.add_line(plane.bbox->get_center(), plane.bbox->get_center() + (10 * normal), Eigen::Vector3f(1.0, 0.0, 0.0));
+            viewer.add_line("normal", plane.bbox->get_center(), plane.bbox->get_center() + (10 * normal), Eigen::Vector3f(1.0, 0.0, 0.0));
         }
 
         redraw_meshes = true;
     }
 
+
+    ImGui::SeparatorText("Point sampling on grid");
+    grid_sampler.render_controls();
+
     if (ImGui::Button("Generate sample points"))
     {
+        viewer.delete_all("sample_points");
+
+        int plane_num = 0;
+
         for (auto& plane : detected_planes)
         {
+            ++plane_num;
             if (!plane.selected) continue;
 
-            plane.sample_points = sample_points_on_grid(plane, 10.0, 0.0);
+            spdlog::info("Sampling points for plane {}/{}", plane_num, detected_planes.size());
+
+            plane.sample_points = grid_sampler.sample(plane, base_point_cloud->get_points_f());
             // plane._sample_points = sample_points
 
-            size_t point_count = plane.sample_points.size();
+            for (size_t i = 0; i < plane.sample_points.size(); ++i)
+            {
+                viewer.add_sphere(
+                    "sample_points",
+                    plane.sample_points[i].cast<float>(),
+                    0.2f,
+                    Eigen::Vector3f(1.0, 0.0, 0.0)
+                );
+            }
+
+            /*size_t point_count = plane.sample_points.size();
             Points points{ point_count, 3 };
 
             for (size_t i = 0; i < point_count; ++i)
@@ -329,7 +355,7 @@ bool Tool::on_gui()
                 points.row(i)(2) = plane.sample_points[i][2];
             }
 
-            viewer.add_point_cloud("sample_points", points, 1.0f, 0.0f, 0.0f);
+            viewer.add_point_cloud("sample_points", points, 1.0f, 0.0f, 0.0f);*/
         }
         redraw_meshes = true;
     }
@@ -348,23 +374,28 @@ bool Tool::on_gui()
                 sample_point += plane.normal * 10.0f;
             }
 
-            for (size_t i = 0; i < point_count; ++i)
+            for (size_t i = 0; i < plane.sample_points.size(); ++i)
             {
-                points.row(i)(0) = plane.sample_points[i][0];
-                points.row(i)(1) = plane.sample_points[i][1];
-                points.row(i)(2) = plane.sample_points[i][2];
+                viewer.add_sphere(
+                    "sample_points",
+                    plane.sample_points[i].cast<float>(),
+                    0.2f,
+                    Eigen::Vector3f(1.0, 0.0, 0.0)
+                );
             }
-
-            viewer.add_point_cloud("sample_points", points, 1.0f, 0.0f, 0.0f);
         }
 	}
 
     if (ImGui::Button("Optimize local paths"))
     {
+        spdlog::info("why are we still here");
+        spdlog::info("plane num: {}", detected_planes.size());
+        
         for (int i = 0; i < detected_planes.size(); ++i)
         {
             blast::Graph graph;
             auto& plane = detected_planes[i];
+            spdlog::info("Sample point count: {}", plane.sample_points.size());
 
             // Add sample points to graph
             for (int j = 0; j < plane.sample_points.size(); ++j)
@@ -388,12 +419,16 @@ bool Tool::on_gui()
                 }
             }
 
+            spdlog::info("just to suffer");
+
             // Optimize graph
             // blast::Ant_colony_optimizer ant_colony_optimizer{&graph, 8, 100};
             // std::vector<size_t> path = ant_colony_optimizer.execute_iterations(100);
             blast::Greedy_optimizer greedy_optimizer{ &graph, plane.sample_points };
             std::vector<size_t> path = greedy_optimizer.execute();
 			plane.local_path = path;
+
+            spdlog::info("teeeeeeeeeeeeeest");
 
             // Prepare outputting resulting path index sequence e.g. 0 -> 1 -> 2 -> 3
             /* std::string r = "";
@@ -413,7 +448,7 @@ bool Tool::on_gui()
                 auto& point1 = plane.sample_points[path[j]];
                 auto& point2 = plane.sample_points[path[j + 1]];
 
-                viewer.add_line(point1.cast<float>(), point2.cast<float>(), Eigen::Vector3f(1.0, 0.0, 0.0));
+                viewer.add_line("local_path", point1.cast<float>(), point2.cast<float>(), Eigen::Vector3f(1.0, 0.0, 0.0));
             }
 
             redraw_meshes = true;
@@ -503,7 +538,7 @@ bool Tool::on_gui()
             // Draw lines in viewer
             for (int i = 0; i < all_points.size() - 1; ++i)
             {
-                viewer.add_line(all_points[i], all_points[i + 1], Eigen::Vector3f(1.0, 0.0, 0.0));
+                viewer.add_line("path", all_points[i], all_points[i + 1], Eigen::Vector3f(1.0, 0.0, 0.0));
                 viewer.add_sphere(
                     "path",
                     all_points[i],
@@ -596,7 +631,7 @@ bool Tool::on_mouse_button(int key, input::Action action, int mods)
 
             if (selected_plane_segment)
             {
-				viewer.add_line(ray_origin, selected_plane_segment->bbox->get_center(), Eigen::Vector3f(0, 0, 1));
+				viewer.add_line("raycast", ray_origin, selected_plane_segment->bbox->get_center(), Eigen::Vector3f(0, 0, 1));
             }
         }
 
@@ -604,7 +639,7 @@ bool Tool::on_mouse_button(int key, input::Action action, int mods)
         // viewer.get_by_tag(selected_plane_segment.get_uuid())->enabled = false;
 
         // Visualize the ray
-        viewer.add_line(ray_origin, ray_origin + ray_direction * 10000, Eigen::Vector3f(1, 0, 0));
+        viewer.add_line("raycast", ray_origin, ray_origin + ray_direction * 10000, Eigen::Vector3f(1, 0, 0));
         
 
         return false;

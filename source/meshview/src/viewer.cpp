@@ -410,10 +410,11 @@ Mesh& Viewer::add_sphere(const std::string& tag, const Eigen::Ref<const Vector3f
                                                       color[2]);
 }
 
-PointCloud& Viewer::add_line(const Eigen::Ref<const Vector3f>& a,
+PointCloud& Viewer::add_line(const std::string& tag,
+							 const Eigen::Ref<const Vector3f>& a,
                              const Eigen::Ref<const Vector3f>& b,
                              const Eigen::Ref<const Vector3f>& color) {
-    return add_point_cloud(PointCloud::Line(a, b, color));
+    return add_point_cloud(PointCloud::Line(tag, a, b, color));
 }
 
 Mesh* Viewer::get_by_tag(const std::string& tag)

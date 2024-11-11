@@ -1,5 +1,6 @@
 #pragma once
 #include "blast/planes/oliveira_planes.hpp"
+#include "blast/sampler/grid_sampler.hpp"
 #include "meshview/meshview.hpp"
 
 namespace blast {
@@ -21,6 +22,7 @@ public:
 
     std::string selected_example_file = "knochen-komplett.pcd";
     Oliveira_plane_segmenter plane_segmenter;
+    Grid_sampler grid_sampler;
 private:
     blast::Viewer viewer;
     // * Event callbacks

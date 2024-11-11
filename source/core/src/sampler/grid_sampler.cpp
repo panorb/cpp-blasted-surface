@@ -1,8 +1,17 @@
 #include "blast/sampler/grid_sampler.hpp"
 
+#include <imgui.h>
+
 #include "blast/detected_plane_segment.hpp"
 
-std::vector<Eigen::Vector3f> sample_points_on_grid(Detected_plane_segment& plane, float grid_size, float distance_along_normal)
+void Grid_sampler::render_controls()
+{
+	ImGui::DragFloat("Grid size", &grid_size_, .5, 1.0, 30.0);
+	ImGui::DragFloat("Angle bias", &angle_bias_,	1.0, 1.0, 50.0);
+	ImGui::DragFloat("Point support radius", &point_support_radius_, .3, 0.0, 40.0);
+}
+
+std::vector<Eigen::Vector3f> Grid_sampler::sample(Detected_plane_segment& plane, const std::vector<Eigen::Vector3f>& cloud_points)
 {
 	auto bbox = plane.bbox;
 	Eigen::Vector3f normal = plane.normal;
@@ -19,8 +28,8 @@ std::vector<Eigen::Vector3f> sample_points_on_grid(Detected_plane_segment& plane
 	float x_axis_length = bbox->extent_(0);
 	float y_axis_length = bbox->extent_(1);
 
-	int x_axis_num = x_axis_length / grid_size;
-	int y_axis_num = y_axis_length / grid_size;
+	int x_axis_num = x_axis_length / grid_size_;
+	int y_axis_num = y_axis_length / grid_size_;
 
 
 	std::vector<Eigen::Vector3f> sample_points;
@@ -29,10 +38,19 @@ std::vector<Eigen::Vector3f> sample_points_on_grid(Detected_plane_segment& plane
 	{
 		for (int j = 0; j < y_axis_num; j++)
 		{
-			Eigen::Vector3f point = origin + i * grid_size * x_axis_unit + j * grid_size * y_axis_unit;
-			sample_points.push_back(point);
-			// bbox->sample_points_.push_back(point);
-			// spdlog::info("grid point: {0}, {1}, {2}", point(0), point(1), point(2));
+			Eigen::Vector3f point = origin + i * grid_size_ * x_axis_unit + j * grid_size_ * y_axis_unit;
+
+			for (auto& pt : cloud_points)
+			{
+				// check if point is near pt
+				if ((pt - point).norm() <= point_support_radius_)
+				{
+					// point is supported and should be added.
+					sample_points.push_back(point);
+					spdlog::info("Proposed point (grid: {}, {}) is supported. Adding...", i, j);
+					break;
+				}
+			}
 		}
 	}
 

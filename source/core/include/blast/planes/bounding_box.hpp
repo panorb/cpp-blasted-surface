@@ -36,6 +36,7 @@ public:
 		const Eigen::Vector3f& center);
 	virtual Oriented_bounding_box& rotate(const Eigen::Matrix3f& R,
 		const Eigen::Vector3f& center);
+	double area() const;
 
 	double volume() const;
 

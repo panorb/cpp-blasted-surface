@@ -7,7 +7,14 @@
 
 class Grid_sampler
 {
-	Grid_sampler(std::shared_ptr<Oriented_bounding_box> plane);
-};
+public:
+	Grid_sampler() {};
 
-std::vector<Eigen::Vector3f> sample_points_on_grid(Detected_plane_segment& plane, float grid_size, float distance_along_normal);
+
+	float grid_size_ = 10.0f;
+	float angle_bias_ = 5.0f;
+	float point_support_radius_ = 3.0f;
+
+	void render_controls();
+	std::vector<Eigen::Vector3f> sample(Detected_plane_segment& plane, const std::vector<Eigen::Vector3f>& cloud_points);
+};
