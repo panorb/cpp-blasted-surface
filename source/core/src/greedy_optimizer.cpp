@@ -5,7 +5,6 @@
 
 std::vector<size_t> blast::Greedy_optimizer::execute() const
 {
-	spdlog::info("what is happening");
 	// Initialize the solution vector
 	std::vector<size_t> solution;
 	solution.reserve(node_graph->get_node_count());

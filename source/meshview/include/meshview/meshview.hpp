@@ -484,7 +484,8 @@ class Viewer {
         const Eigen::Ref<const Vector3f>& b,
         const Eigen::Ref<const Vector3f>& color = Vector3f(1.f, 1.f, 1.f));
 
-    Mesh* get_by_tag(const std::string& tag);
+    Mesh* get_mesh_by_tag(const std::string& tag);
+    PointCloud* get_point_cloud_by_tag(const std::string& tag);
 	void delete_all(const std::string& tag);
 
     // * The meshes

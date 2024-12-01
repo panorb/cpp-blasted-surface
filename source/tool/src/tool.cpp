@@ -5,14 +5,16 @@
 #include <fstream>
 #include <GLFW/glfw3.h>
 
-#include "blast/detected_plane_segment.hpp"
 #include "blast/point_cloud.hpp"
 #include "blast/planes/oliveira_planes.hpp"
 #include <pcl/io/ply_io.h>
 
+#include "detected_plane_segment.hpp"
 #include "pipeline.hpp"
 #include "blast/greedy_optimizer.hpp"
+#include "blast/three_point_optimizer.hpp"
 #include "blast/sampler/grid_sampler.hpp"
+#include "debug.hpp"
 
 
 namespace blast {
@@ -42,6 +44,7 @@ size_t base_point_cloud_index = 0;
 
 std::vector<Eigen::Vector3f> skeleton_vertices;
 std::vector<Eigen::Vector3f> total_path;
+std::vector<Eigen::Vector3f> total_lookat;
 
 Eigen::Vector3f line1_start = { 0.0f, 0.0f, 0.0f };
 Eigen::Vector3f line1_end = { 0.0f, 110.0f, 0.0f };
@@ -49,10 +52,27 @@ Eigen::Vector3f line2_start = { -420.0f, -745.0f, 565.0f };
 Eigen::Vector3f line2_end = { -342.22f, -822.78, 565.0f };
 Eigen::Vector3f scanner_offset = { 0.0f, 0.0f, 0.0f };
 
+bool selection_mode = false;
+
+Eigen::Matrix3f calculate_rotation_matrix(Eigen::Vector3f line1_start, Eigen::Vector3f line1_end, Eigen::Vector3f line2_start, Eigen::Vector3f line2_end)
+{
+	Eigen::Vector3f line1_direction = line1_end - line1_start;
+	Eigen::Vector3f line2_direction = line2_end - line2_start;
+	Eigen::Vector3f line1_direction_normalized = line1_direction.normalized();
+	Eigen::Vector3f line2_direction_normalized = line2_direction.normalized();
+	// Compute rotation axis
+	Eigen::Vector3f rotation_axis = line1_direction_normalized.cross(line2_direction_normalized);
+	// Compute the rotation angle between the two direction vectors using the dot product
+	float rotation_angle = std::acos(line1_direction_normalized.dot(line2_direction_normalized));
+	// Compute the rotation matrix R (Rodrigues' rotation formula)
+	Eigen::Matrix3f R = Eigen::AngleAxisf(rotation_angle, rotation_axis).toRotationMatrix();
+	return R;
+}
+
 Eigen::Matrix4f calculate_transformation_matrix(Eigen::Vector3f line1_start, Eigen::Vector3f line1_end, Eigen::Vector3f line2_start, Eigen::Vector3f line2_end, Eigen::Vector3f scanner_offset) {
 
     // This will move line 1s start to coincide with line 2
-	Eigen::Vector3f start_transdlation = line2_start - line1_start;
+	Eigen::Vector3f start_translation = line2_start - line1_start;
 
     Eigen::Vector3f line1_direction = line1_end - line1_start;
 	Eigen::Vector3f line2_direction = line2_end - line2_start;
@@ -77,7 +97,7 @@ Eigen::Matrix4f calculate_transformation_matrix(Eigen::Vector3f line1_start, Eig
 	// Compute full transformation matrix (including rotation & translation)
 	Eigen::Matrix4f T = Eigen::Matrix4f::Identity();
 	T.block<3, 3>(0, 0) = scaling_factor * R;
-	T.block<3, 1>(0, 3) = start_transdlation;
+	T.block<3, 1>(0, 3) = start_translation;
 
 	return T;
 }
@@ -202,6 +222,8 @@ bool Tool::on_gui()
             float r = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
             float g = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
             float b = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+            std::vector<Eigen::Vector3f> colors = { {}, {} };
+
             plane->color_ = Eigen::Vector3f(r, g, b);
 
             auto indices = plane->get_point_indices_within_bounding_box(base_point_cloud->get_points_f());
@@ -215,12 +237,23 @@ bool Tool::on_gui()
 				points.row(i)(2) = base_point_cloud->get_points()[indices[i]][2];
 			}
 
-			viewer.add_point_cloud("plane_" + std::to_string(i), points, r, g, b);
+			viewer.add_point_cloud(detected_plane.get_uuid(), points, r, g, b);
 
             //viewer.add_mesh(detected_plane.get_uuid(), vertices, triangles, r, g, b);
             // viewer.add_line(plane->get_center(), plane->get_center() + (2 * normal), Eigen::Vector3f(0.0, 1.0, 0.0));
         }
 
+        redraw_meshes = true;
+    }
+
+    if (ImGui::Button("Enter Selection Mode"))
+    {
+	    for (auto& pc : viewer.point_clouds)
+	    {
+            pc->verts_rgb().rowwise() = Eigen::RowVector3f(0.3, 0.3, 0.3);
+	    }
+
+        selection_mode = true;
         redraw_meshes = true;
     }
 
@@ -244,7 +277,7 @@ bool Tool::on_gui()
 
         //std::vector<size_t> indices = max_area_it->bbox->get_point_indices_within_bounding_box(base_point_cloud->get_points_f());
         //base_point_cloud->extract_indices(indices, true);
-        viewer.delete_all("plane_" + std::to_string(max_area_it - detected_planes.begin()));
+        viewer.delete_all(max_area_it->get_uuid());
         detected_planes.erase(max_area_it);
 
         redraw_meshes = true;
@@ -262,7 +295,7 @@ bool Tool::on_gui()
 			viewer.add_sphere(
 				"sph",
 				skeleton_vertices[i].cast<float>(),
-				2.0f,
+				1.5f,
 				Eigen::Vector3f(1.0, 1.0, 1.0)
 			);
 		}
@@ -332,7 +365,7 @@ bool Tool::on_gui()
 
             spdlog::info("Sampling points for plane {}/{}", plane_num, detected_planes.size());
 
-            plane.sample_points = grid_sampler.sample(plane, base_point_cloud->get_points_f());
+            plane.sample_points = grid_sampler.sample(*plane.bbox, base_point_cloud->get_points_f());
             // plane._sample_points = sample_points
 
             for (size_t i = 0; i < plane.sample_points.size(); ++i)
@@ -419,7 +452,7 @@ bool Tool::on_gui()
                 }
             }
 
-            spdlog::info("just to suffer");
+            // spdlog::info("just to suffer");
 
             // Optimize graph
             // blast::Ant_colony_optimizer ant_colony_optimizer{&graph, 8, 100};
@@ -428,7 +461,7 @@ bool Tool::on_gui()
             std::vector<size_t> path = greedy_optimizer.execute();
 			plane.local_path = path;
 
-            spdlog::info("teeeeeeeeeeeeeest");
+            // spdlog::info("teeeeeeeeeeeeeest");
 
             // Prepare outputting resulting path index sequence e.g. 0 -> 1 -> 2 -> 3
             /* std::string r = "";
@@ -461,20 +494,30 @@ bool Tool::on_gui()
         blast::Graph graph;
 		std::vector<Eigen::Vector3f> all_centers;
 
-        for (int i = 0; i < detected_planes.size(); ++i)
+        std::deque<Detected_plane_segment> selected_planes;
+
+		for (auto& plane : detected_planes)
+		{
+			if (plane.selected)
+			{
+				selected_planes.push_back(plane);
+			}
+		}
+
+        for (int i = 0; i < selected_planes.size(); ++i)
         {
-            graph.add_node(std::make_shared<blast::Node>(std::format("P{}", i)));
-			all_centers.push_back(detected_planes[i].bbox->get_center().cast<float>());
+        	graph.add_node(std::make_shared<blast::Node>(std::format("P{}", i)));
+			all_centers.push_back(selected_planes[i].bbox->get_center().cast<float>());
         }
 
-        for (int i = 0; i < detected_planes.size(); ++i)
+        for (int i = 0; i < selected_planes.size(); ++i)
         {
-            for (int j = 0; j < detected_planes.size(); ++j)
+            for (int j = 0; j < selected_planes.size(); ++j)
             {
                 if (i != j && !graph.exists_edge(i, j))
                 {
-                    auto& plane1 = detected_planes[i];
-                    auto& plane2 = detected_planes[j];
+                    auto& plane1 = selected_planes[i];
+                    auto& plane2 = selected_planes[j];
                     auto distance = (plane1.bbox->get_center() - plane2.bbox->get_center()).norm();
                     graph.add_undirected_edge(i, j, distance);
                 }
@@ -485,17 +528,18 @@ bool Tool::on_gui()
         blast::Greedy_optimizer greedy_optimizer{ &graph, all_centers };
 
         // total_path.insert(total_path.end(),detected_planes[0].local_path.begin(), detected_planes[0].local_path.begin());
-        for (size_t idx : detected_planes[0].local_path)
+        for (size_t idx : selected_planes[0].local_path)
         {
-            total_path.push_back(detected_planes[0].sample_points[idx]);
+            total_path.push_back(selected_planes[0].sample_points[idx]);
+			total_lookat.push_back(-selected_planes[0].normal);
         }
 
         // Draw path
         auto path = greedy_optimizer.execute();
         for (int i = 0; i < path.size() - 1; ++i)
         {
-            auto& plane1 = detected_planes[path[i]];
-            auto& plane2 = detected_planes[path[i + 1]];
+            auto& plane1 = selected_planes[path[i]];
+            auto& plane2 = selected_planes[path[i + 1]];
 
             // Add sphere for point1
             viewer.add_sphere(
@@ -528,10 +572,15 @@ bool Tool::on_gui()
             all_points.push_back(end_point);
 
 			total_path.insert(total_path.end(), all_points.begin(), all_points.end());
+            for (auto& pt : all_points)
+            {
+				total_lookat.push_back(total_lookat.back());
+            }
 
 			for (size_t idx : plane2.local_path)
 			{
 				total_path.push_back(plane2.sample_points[idx]);
+				total_lookat.push_back(-plane2.normal);
 			}
 
 
@@ -550,6 +599,19 @@ bool Tool::on_gui()
         redraw_meshes = true;
     }
 
+    if (ImGui::Button("TEST: Get k highest points"))
+    {
+        std::vector<size_t> highest_points = blast::get_k_highest_points(*base_point_cloud, 9);
+		for (size_t i = 0; i < highest_points.size(); ++i)
+		{
+			viewer.add_sphere(
+				"highest_points",
+				base_point_cloud->get_points()[highest_points[i]].cast<float>(),
+				2.0f, Eigen::Vector3f(0.0f, 1.0f, 0.0f)
+			);
+		}
+    }
+
 
     ImGui::SeparatorText("Koordinatentransformation");
     ImGui::Text("Linie in Punktwolke");
@@ -563,18 +625,44 @@ bool Tool::on_gui()
 
     if (ImGui::Button("Ausgabe in G-Code"))
     {
+        Eigen::Matrix3f rotation_matrix = calculate_rotation_matrix(line1_start, line1_end, line2_start, line2_end);
         Eigen::Matrix4f transformation_matrix = calculate_transformation_matrix(line1_start, line1_end, line2_start, line2_end, scanner_offset);
 
         std::ofstream ofstream;
         ofstream.open("./output.txt");
 
         spdlog::info("G-Code:");
-        for (auto pt : total_path)
+        spdlog::info("Laenge points {}", total_path.size());
+        spdlog::info("Laenge lookat {}", total_lookat.size());
+        for (size_t i = 0; i < total_path.size(); ++i)
         {
+			auto pt = total_path[i];
+			auto lookat = total_lookat[i];
+
             Eigen::Vector3f transformed = (transformation_matrix * pt.homogeneous()).hnormalized();
-            ofstream << std::format("G01 X={0:.2f} Y={1:.2f} Z={2:.2f} A=-0.0 B=-0.0 C=45.0 F=200.0\n", transformed.x(), transformed.y(), transformed.z()).c_str();
+            transformed.z() = line2_start.z() - pt.z() + 100.0; // TODO: Remove manual offset
+
+			// Transform lookat vector to robot coordinate system
+			Eigen::Vector3f transformed_lookat = rotation_matrix * lookat;
+			//Eigen::Vector3f transformed_lookat = lookat;
+
+			// Convert lookat vector to yaw, pitch, roll
+			float yaw = std::atan2(transformed_lookat.y(), transformed_lookat.x());
+			float pitch = std::atan2(-transformed_lookat.z(), std::sqrt(transformed_lookat.x() * transformed_lookat.x() + transformed_lookat.y() * transformed_lookat.y()));
+			float roll = -(M_PI / 4);
+
+			// Convert to A, B, C
+			float A = yaw * 180.0f / M_PI;
+			float B = pitch * 180.0f / M_PI;
+			float C = roll * 180.0f / M_PI;
+
+            ofstream << std::format("G01 X={0:.2f} Y={1:.2f} Z={2:.2f} A={3:.2f} B={4:.2f} C={5:.2f} F=200.0\n", transformed.x(), transformed.y(), transformed.z(), A, B, C).c_str();
         }
+
+        ofstream << "M30";
     }
+
+
 
 	ImGui::End();
     return redraw_meshes;
@@ -588,9 +676,9 @@ bool Tool::on_key(int key, input::Action action, int mods)
 
 bool Tool::on_mouse_button(int key, input::Action action, int mods)
 {
-    if (key == GLFW_MOUSE_BUTTON_RIGHT)
+    if (key == GLFW_MOUSE_BUTTON_RIGHT && action == input::Action::release)
     {
-        // Shoot raycast from mouse position
+        // Shoot raycast rom mouse position
 
         // Calculate the ray origin
         Eigen::Vector3f ray_origin = viewer.camera.get_pos();
@@ -618,9 +706,9 @@ bool Tool::on_mouse_button(int key, input::Action action, int mods)
 	        for (auto& plane : detected_planes)
 	        {
 	            float intersection_distance = 0.0f;
-	            plane.intersect_ray(ray_origin, ray_direction, intersection_distance);
+	            bool does_intersect = plane.intersect_ray(ray_origin, ray_direction, intersection_distance);
 
-	            if (intersection_distance < selected_intersection_distance)
+	            if (does_intersect && intersection_distance < selected_intersection_distance)
 	            {
 	                selected_intersection_distance = intersection_distance;
 	                selected_plane_segment = &plane;
@@ -631,18 +719,27 @@ bool Tool::on_mouse_button(int key, input::Action action, int mods)
 
             if (selected_plane_segment)
             {
-				viewer.add_line("raycast", ray_origin, selected_plane_segment->bbox->get_center(), Eigen::Vector3f(0, 0, 1));
+				// spdlog::info("Deleting {}...", selected_plane_segment->get_uuid());
+                if (selection_mode)
+                {
+                    selected_plane_segment->selected = !selected_plane_segment->selected;
+
+					if (selected_plane_segment->selected)
+					{
+						viewer.get_point_cloud_by_tag(selected_plane_segment->get_uuid())->verts_rgb().rowwise() = Eigen::RowVector3f(0.0, 1.0, 0.0);
+						viewer.get_point_cloud_by_tag(selected_plane_segment->get_uuid())->update();
+					}
+                    else
+                    {
+						viewer.get_point_cloud_by_tag(selected_plane_segment->get_uuid())->verts_rgb().rowwise() = Eigen::RowVector3f(0.3, 0.3, 0.3);
+						viewer.get_point_cloud_by_tag(selected_plane_segment->get_uuid())->update();
+                    }
+                }
             }
         }
 
-        //spdlog::info("Deleting {}...", selected_plane_segment.get_uuid());
-        // viewer.get_by_tag(selected_plane_segment.get_uuid())->enabled = false;
 
-        // Visualize the ray
-        viewer.add_line("raycast", ray_origin, ray_origin + ray_direction * 10000, Eigen::Vector3f(1, 0, 0));
-        
-
-        return false;
+        return true;
     }
 
     return true;

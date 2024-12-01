@@ -1,7 +1,6 @@
 #pragma once
 #include <random>
 
-#include "planes/bounding_box.hpp"
 
 struct Detected_plane_segment
 {
@@ -9,7 +8,7 @@ struct Detected_plane_segment
 	Eigen::Vector3f normal;
 	std::vector<Eigen::Vector3f> sample_points;
 	std::vector<size_t> local_path;
-	bool selected = true;
+	bool selected = false;
 
 	Detected_plane_segment(std::shared_ptr<Oriented_bounding_box> bbox, Eigen::Vector3f normal)
 		: bbox(bbox), normal(normal)

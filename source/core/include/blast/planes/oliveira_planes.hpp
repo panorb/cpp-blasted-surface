@@ -28,7 +28,7 @@ public:
 	virtual void render_controls();
 
 	float normal_similarity_deg_ = 60.f;
-	float coplanarity_deg_ = 75;
+	float coplanarity_deg_ = 75.f;
 	float outlier_ratio_ = 0.75f;
 	float min_plane_edge_length_ = 0.0f;
 	int min_num_points_ = 0;

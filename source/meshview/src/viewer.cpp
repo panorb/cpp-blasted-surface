@@ -417,7 +417,7 @@ PointCloud& Viewer::add_line(const std::string& tag,
     return add_point_cloud(PointCloud::Line(tag, a, b, color));
 }
 
-Mesh* Viewer::get_by_tag(const std::string& tag)
+Mesh* Viewer::get_mesh_by_tag(const std::string& tag)
 {
     for (auto mesh_it = meshes.begin(); mesh_it != meshes.end();)
     {
@@ -428,6 +428,23 @@ Mesh* Viewer::get_by_tag(const std::string& tag)
         else
         {
             ++mesh_it;
+        }
+    }
+
+    return nullptr;
+}
+
+PointCloud* Viewer::get_point_cloud_by_tag(const std::string& tag)
+{
+    for (auto cloud_it = point_clouds.begin(); cloud_it != point_clouds.end();)
+    {
+        if (cloud_it->get()->tag == tag)
+        {
+            return cloud_it->get();
+        }
+        else
+        {
+            ++cloud_it;
         }
     }
 
