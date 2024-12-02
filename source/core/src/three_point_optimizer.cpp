@@ -45,42 +45,30 @@ std::vector<size_t> blast::Three_point_optimizer::execute() const
 	while (!unvisited_nodes.empty())
 	{
 		// Until no nodes are left: Find the 3 closest sample points
-		std::array<size_t, 3> closest_nodes = { std::numeric_limits<size_t>::max(), std::numeric_limits<size_t>::max(), std::numeric_limits<size_t>::max() };
-		std::array<float, 3> closest_distances = { std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), std::numeric_limits<float>::max() };
+		std::vector<size_t> closest_nodes = {};
+		std::vector<float> closest_distances = {};
+		int closest_amount = std::min(5, (int)unvisited_nodes.size()); // 3 Max, but less if there are less than 3 nodes left
 
-		if (unvisited_nodes.size() < 3)
+		// Initialize the closest nodes and distances
+		for (int i = 0; i < closest_amount; ++i)
 		{
-			solution.push_back(*unvisited_nodes.begin());
-			continue;
+			closest_nodes.push_back(0);
+			closest_distances.push_back(std::numeric_limits<float>::max());
 		}
 
-		// Find 3 closest sample points
+		// Find clost_amount of closest sample points
 		for (size_t node_i : unvisited_nodes)
 		{
 			float cost = node_graph->get_edge_weight(solution[solution.size() - 1], node_i).value_or(std::numeric_limits<float>::max());
 
-			if (cost < closest_distances[0])
+			for (int check = 0; check < closest_amount; ++check)
 			{
-				closest_distances[2] = closest_distances[1];
-				closest_distances[1] = closest_distances[0];
-				closest_distances[0] = cost;
-
-				closest_nodes[2] = closest_nodes[1];
-				closest_nodes[1] = closest_nodes[0];
-				closest_nodes[0] = node_i;
-			}
-			else if (cost < closest_distances[1])
-			{
-				closest_distances[2] = closest_distances[1];
-				closest_distances[1] = cost;
-
-				closest_nodes[2] = closest_nodes[1];
-				closest_nodes[1] = node_i;
-			}
-			else if (cost < closest_distances[2])
-			{
-				closest_distances[2] = cost;
-				closest_nodes[2] = node_i;
+				if (cost < closest_distances[check])
+				{
+					closest_distances.insert(closest_distances.begin() + check, cost);
+					closest_nodes.insert(closest_nodes.begin() + check, node_i);
+					break;
+				}
 			}
 		}
 
@@ -88,7 +76,7 @@ std::vector<size_t> blast::Three_point_optimizer::execute() const
 		size_t best_node = 0;
 		float best_angle = std::numeric_limits<float>::max();
 
-		for (size_t i = 0; i < 3; ++i)
+		for (size_t i = 0; i < closest_amount; ++i)
 		{
 			Eigen::Vector3f point1 = points[solution[solution.size() - 2]];
 			Eigen::Vector3f point2 = points[solution[solution.size() - 1]];

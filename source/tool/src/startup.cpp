@@ -27,8 +27,9 @@ int main(int argc, char** argv)
 	tool.plane_segmenter.min_num_points_ = tbl["oliveira"]["min_num_points"].value_or(tool.plane_segmenter.min_num_points_);
 
 	tool.grid_sampler.grid_size_ = tbl["grid_sampler"]["grid_size"].value_or(tool.grid_sampler.grid_size_);
-	tool.grid_sampler.angle_bias_ = tbl["grid_sampler"]["angle_bias"].value_or(tool.grid_sampler.angle_bias_);
-	tool.grid_sampler.point_support_radius_ = tbl["grid_sampler"]["point_support_radius"].value_or(tool.grid_sampler.point_support_radius_);
+	tool.grid_sampler.circle_radius_ = tbl["grid_sampler"]["circle_radius"].value_or(tool.grid_sampler.circle_radius_);
+	tool.grid_sampler.erosion_iterations_ = tbl["grid_sampler"]["erosion_iterations"].value_or(tool.grid_sampler.erosion_iterations_);
+	tool.grid_sampler.hole_filling_enabled_ = tbl["grid_sampler"]["hole_filling_enabled"].value_or(tool.grid_sampler.hole_filling_enabled_);
 
 	tool.show();
 
@@ -47,8 +48,9 @@ int main(int argc, char** argv)
 
 	auto grid_sampler_tbl = tbl["grid_sampler"].as_table();
 	grid_sampler_tbl->insert_or_assign("grid_size", tool.grid_sampler.grid_size_);
-	grid_sampler_tbl->insert_or_assign("angle_bias", tool.grid_sampler.angle_bias_);
-	grid_sampler_tbl->insert_or_assign("point_support_radius", tool.grid_sampler.point_support_radius_);
+	grid_sampler_tbl->insert_or_assign("circle_radius", tool.grid_sampler.circle_radius_);
+	grid_sampler_tbl->insert_or_assign("erosion_iterations", tool.grid_sampler.erosion_iterations_);
+	grid_sampler_tbl->insert_or_assign("hole_filling_enabled", tool.grid_sampler.hole_filling_enabled_);
 
 	//*tbl["oliveira"]["coplanarity_deg"].as_floating_point() = tool.plane_segmenter.coplanarity_deg_;
 	//*tbl["oliveira"]["outlier_ratio"].as_floating_point() = tool.plane_segmenter.outlier_ratio_;

@@ -8,6 +8,8 @@ struct Detected_plane_segment
 	Eigen::Vector3f normal;
 	std::vector<Eigen::Vector3f> sample_points;
 	std::vector<size_t> local_path;
+	std::vector<size_t> indices_within_bbox;
+
 	bool selected = false;
 
 	Detected_plane_segment(std::shared_ptr<Oriented_bounding_box> bbox, Eigen::Vector3f normal)

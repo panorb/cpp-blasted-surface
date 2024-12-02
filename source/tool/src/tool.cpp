@@ -15,6 +15,7 @@
 #include "blast/three_point_optimizer.hpp"
 #include "blast/sampler/grid_sampler.hpp"
 #include "debug.hpp"
+#include "blast/ordered_optimizer.hpp"
 
 
 namespace blast {
@@ -186,15 +187,14 @@ bool Tool::on_gui()
         // Visualize planes
         for (int i = 0; i < planes.size(); ++i)
         {
-            auto& plane = planes[i];
-            Eigen::Vector3f normal = plane->R_ * Eigen::Vector3f(0, 0, plane->extent_(2));
+            auto& bbox = planes[i];
+            Eigen::Vector3f normal = bbox->R_ * Eigen::Vector3f(0, 0, bbox->extent_(2));
             normal.normalize();
 
             // Add to detected planes vector
-            auto detected_plane = Detected_plane_segment(plane, normal);
-            detected_planes.push_back(detected_plane);
+            auto detected_plane = Detected_plane_segment(bbox, normal);
 
-            auto box_points = plane->get_box_points();
+            auto box_points = bbox->get_box_points();
             Points vertices{ box_points.size(), 3 };
 
             for (size_t i = 0; i < box_points.size(); ++i)
@@ -224,20 +224,21 @@ bool Tool::on_gui()
             float b = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
             std::vector<Eigen::Vector3f> colors = { {}, {} };
 
-            plane->color_ = Eigen::Vector3f(r, g, b);
+            bbox->color_ = Eigen::Vector3f(r, g, b);
 
-            auto indices = plane->get_point_indices_within_bounding_box(base_point_cloud->get_points_f());
+        	detected_plane.indices_within_bbox = bbox->get_point_indices_within_bounding_box(base_point_cloud->get_points_f());
+            
+			Points points{ detected_plane.indices_within_bbox.size(), 3 };
 
-			Points points{ indices.size(), 3 };
-
-			for (size_t i = 0; i < indices.size(); ++i)
+			for (size_t i = 0; i < detected_plane.indices_within_bbox.size(); ++i)
 			{
-				points.row(i)(0) = base_point_cloud->get_points()[indices[i]][0];
-				points.row(i)(1) = base_point_cloud->get_points()[indices[i]][1];
-				points.row(i)(2) = base_point_cloud->get_points()[indices[i]][2];
+				points.row(i)(0) = base_point_cloud->get_points()[detected_plane.indices_within_bbox[i]][0];
+				points.row(i)(1) = base_point_cloud->get_points()[detected_plane.indices_within_bbox[i]][1];
+				points.row(i)(2) = base_point_cloud->get_points()[detected_plane.indices_within_bbox[i]][2];
 			}
 
 			viewer.add_point_cloud(detected_plane.get_uuid(), points, r, g, b);
+            detected_planes.push_back(detected_plane);
 
             //viewer.add_mesh(detected_plane.get_uuid(), vertices, triangles, r, g, b);
             // viewer.add_line(plane->get_center(), plane->get_center() + (2 * normal), Eigen::Vector3f(0.0, 1.0, 0.0));
@@ -365,7 +366,16 @@ bool Tool::on_gui()
 
             spdlog::info("Sampling points for plane {}/{}", plane_num, detected_planes.size());
 
-            plane.sample_points = grid_sampler.sample(*plane.bbox, base_point_cloud->get_points_f());
+			// Only points within the bounding box of the plane
+			std::vector<Eigen::Vector3f> points;
+            auto all_points = base_point_cloud->get_points_f();
+
+			for (size_t i : plane.indices_within_bbox)
+			{
+				points.push_back(all_points[i]);
+			}
+
+            plane.sample_points = grid_sampler.sample(*plane.bbox, points);
             // plane._sample_points = sample_points
 
             for (size_t i = 0; i < plane.sample_points.size(); ++i)
@@ -421,13 +431,14 @@ bool Tool::on_gui()
 
     if (ImGui::Button("Optimize local paths"))
     {
-        spdlog::info("why are we still here");
         spdlog::info("plane num: {}", detected_planes.size());
         
         for (int i = 0; i < detected_planes.size(); ++i)
         {
             blast::Graph graph;
             auto& plane = detected_planes[i];
+			if (!plane.selected) continue;
+
             spdlog::info("Sample point count: {}", plane.sample_points.size());
 
             // Add sample points to graph
@@ -457,8 +468,8 @@ bool Tool::on_gui()
             // Optimize graph
             // blast::Ant_colony_optimizer ant_colony_optimizer{&graph, 8, 100};
             // std::vector<size_t> path = ant_colony_optimizer.execute_iterations(100);
-            blast::Greedy_optimizer greedy_optimizer{ &graph, plane.sample_points };
-            std::vector<size_t> path = greedy_optimizer.execute();
+            blast::Ordered_optimizer optimizer{ &graph, plane.sample_points };
+            std::vector<size_t> path = optimizer.execute();
 			plane.local_path = path;
 
             // spdlog::info("teeeeeeeeeeeeeest");
@@ -601,15 +612,20 @@ bool Tool::on_gui()
 
     if (ImGui::Button("TEST: Get k highest points"))
     {
-        std::vector<size_t> highest_points = blast::get_k_highest_points(*base_point_cloud, 9);
-		for (size_t i = 0; i < highest_points.size(); ++i)
+        std::vector<size_t> points_of_interest = blast::get_k_lowest_points(*base_point_cloud, 9);
+		for (size_t i = 0; i < points_of_interest.size(); ++i)
 		{
+			Eigen::Vector3f poi = base_point_cloud->get_points_f()[points_of_interest[i]];
+
 			viewer.add_sphere(
 				"highest_points",
-				base_point_cloud->get_points()[highest_points[i]].cast<float>(),
+                poi,
 				2.0f, Eigen::Vector3f(0.0f, 1.0f, 0.0f)
 			);
+
+
 		}
+		redraw_meshes = true;
     }
 
 

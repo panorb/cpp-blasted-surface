@@ -11,8 +11,9 @@ public:
 
 
 	float grid_size_ = 10.0f;
-	float angle_bias_ = 5.0f;
-	float point_support_radius_ = 3.0f;
+	int circle_radius_ = 5;
+	int erosion_iterations_ = 30;
+	bool hole_filling_enabled_ = true;
 
 	void render_controls();
 	std::vector<Eigen::Vector3f> sample(Oriented_bounding_box& plane, const std::vector<Eigen::Vector3f>& cloud_points);
