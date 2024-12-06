@@ -1,5 +1,6 @@
 #include "blast/tool.hpp"
 
+#include <algorithm>
 #include <filesystem>
 #include <iostream>
 #include <fstream>
@@ -9,12 +10,15 @@
 #include "blast/planes/oliveira_planes.hpp"
 #include <pcl/io/ply_io.h>
 
+#include <toml++/toml.hpp>
+
 #include "detected_plane_segment.hpp"
 #include "pipeline.hpp"
 #include "blast/greedy_optimizer.hpp"
 #include "blast/three_point_optimizer.hpp"
 #include "blast/sampler/grid_sampler.hpp"
 #include "debug.hpp"
+#include "path_node.hpp"
 #include "blast/ordered_optimizer.hpp"
 
 
@@ -44,16 +48,19 @@ std::unique_ptr<blast::Point_cloud> base_point_cloud = nullptr;
 size_t base_point_cloud_index = 0;
 
 std::vector<Eigen::Vector3f> skeleton_vertices;
-std::vector<Eigen::Vector3f> total_path;
-std::vector<Eigen::Vector3f> total_lookat;
+std::vector<Path_node> total_path;
 
-Eigen::Vector3f line1_start = { 0.0f, 0.0f, 0.0f };
-Eigen::Vector3f line1_end = { 0.0f, 110.0f, 0.0f };
 Eigen::Vector3f line2_start = { -420.0f, -745.0f, 565.0f };
 Eigen::Vector3f line2_end = { -342.22f, -822.78, 565.0f };
 Eigen::Vector3f scanner_offset = { 0.0f, 0.0f, 0.0f };
+Eigen::Vector3f sensor_offset = { 78.0f, 178.0f, -95.0f };
+
+	float distance_along_normal = 21.0f;
+float ignore_distance = 45.0f;
 
 bool selection_mode = false;
+bool invert_z = false;
+float max_y_value = 0.0f;
 
 Eigen::Matrix3f calculate_rotation_matrix(Eigen::Vector3f line1_start, Eigen::Vector3f line1_end, Eigen::Vector3f line2_start, Eigen::Vector3f line2_end)
 {
@@ -140,6 +147,23 @@ bool Tool::on_gui()
 
             base_point_cloud_index = viewer.point_clouds.size();
 
+        	std::string config_file = selected_example_file.substr(0, selected_example_file.find_last_of(".")) + ".toml";
+
+           if (std::filesystem::exists("./examples/" + config_file))
+           {
+               spdlog::info("Part config exists...");
+
+               toml::table tbl  = toml::parse_file("./examples/" + config_file);
+
+               line2_start.x() = tbl["scan_path"]["start"]["x"].value_or(0.0);
+               line2_start.y() = tbl["scan_path"]["start"]["y"].value_or(0.0);
+               line2_start.z() = tbl["scan_path"]["start"]["z"].value_or(0.0);
+
+			   line2_end.x() = tbl["scan_path"]["end"]["x"].value_or(0.0);
+			   line2_end.y() = tbl["scan_path"]["end"]["y"].value_or(0.0);
+               line2_end.z() = tbl["scan_path"]["end"]["z"].value_or(0.0);
+           }
+
             if (selected_example_file.ends_with(".ply"))
             {
                 base_point_cloud = blast::Point_cloud::load_ply_file("./examples/" + selected_example_file);
@@ -157,9 +181,13 @@ bool Tool::on_gui()
             size_t point_count = base_point_cloud->get_points().size();
             Points points{ point_count, 3 };
 
+            max_y_value = 0.0f;
+
             for (size_t i = 0; i < point_count; ++i)
             {
-                points.row(i)(0) = base_point_cloud->get_points()[i][0];
+	            max_y_value = std::max(static_cast<float>(base_point_cloud->get_points()[i][1]), max_y_value);
+
+	            points.row(i)(0) = base_point_cloud->get_points()[i][0];
                 points.row(i)(1) = base_point_cloud->get_points()[i][1];
                 points.row(i)(2) = base_point_cloud->get_points()[i][2];
             }
@@ -188,7 +216,7 @@ bool Tool::on_gui()
         for (int i = 0; i < planes.size(); ++i)
         {
             auto& bbox = planes[i];
-            Eigen::Vector3f normal = bbox->R_ * Eigen::Vector3f(0, 0, bbox->extent_(2));
+            Eigen::Vector3f normal = bbox->R_ * Eigen::Vector3f(0, 0, 1.0f);
             normal.normalize();
 
             // Add to detected planes vector
@@ -306,6 +334,45 @@ bool Tool::on_gui()
         
     }
 
+    if (ImGui::Button("Calculate normals based on center of mass"))
+    {
+	    // Calculate center of mass of point cloud
+        Eigen::Vector3d center_of_mass = base_point_cloud->get_points()[0];
+
+		for (size_t i = 1; i < base_point_cloud->get_points().size(); ++i)
+		{
+			center_of_mass += base_point_cloud->get_points()[i];
+		}
+
+		center_of_mass /= base_point_cloud->get_points().size();
+
+        // Draw center of mass
+        viewer.add_sphere(
+			"center_of_mass",
+			center_of_mass.cast<float>(),
+			1.5f,
+			Eigen::Vector3f(1.0, 1.0, 1.0)
+		);
+
+        for (auto& plane : detected_planes)
+        {
+            // Calculate which normal to use
+            Eigen::Vector3f normal = plane.bbox->R_ * Eigen::Vector3f(0, 0, 1);
+			Eigen::Vector3f com_to_plane = plane.bbox->get_center() - center_of_mass.cast<float>();
+
+            if (com_to_plane.dot(normal) < 0)
+            {
+                normal = -normal;
+            }
+
+			plane.normal = normal;
+			// Draw normal
+			viewer.add_line("normal", plane.bbox->get_center(), plane.bbox->get_center() + (10 * normal), Eigen::Vector3f(1.0, 0.0, 0.0));
+        }
+
+		redraw_meshes = true;
+	}
+
     if (ImGui::Button("Calculate normals based on skeleton vertices"))
     {
         // Correct normals of planes
@@ -403,6 +470,8 @@ bool Tool::on_gui()
         redraw_meshes = true;
     }
 
+    ImGui::DragFloat("Distance along normal", &distance_along_normal, 0.1, 0.0f);
+
 	if (ImGui::Button("Move sample points along normals"))
 	{
 		viewer.delete_all("sample_points");
@@ -414,7 +483,8 @@ bool Tool::on_gui()
 
             for (auto& sample_point : plane.sample_points)
             {
-                sample_point += plane.normal * 10.0f;
+                // sample_point += plane.normal * 10.0f;
+                sample_point += Vector3f(0.0, 0.0, -1.0) * distance_along_normal;
             }
 
             for (size_t i = 0; i < plane.sample_points.size(); ++i)
@@ -427,6 +497,8 @@ bool Tool::on_gui()
                 );
             }
         }
+
+		redraw_meshes = true;
 	}
 
     if (ImGui::Button("Optimize local paths"))
@@ -538,11 +610,21 @@ bool Tool::on_gui()
         // Optimize graph
         blast::Greedy_optimizer greedy_optimizer{ &graph, all_centers };
 
-        // total_path.insert(total_path.end(),detected_planes[0].local_path.begin(), detected_planes[0].local_path.begin());
-        for (size_t idx : selected_planes[0].local_path)
-        {
-            total_path.push_back(selected_planes[0].sample_points[idx]);
-			total_lookat.push_back(-selected_planes[0].normal);
+		{
+	        Eigen::Vector3f x_unit = selected_planes[0].bbox->R_ * Eigen::Vector3f(1, 0, 0).normalized();
+	        Eigen::Vector3f y_unit = selected_planes[0].bbox->R_ * Eigen::Vector3f(0, 1, 0).normalized();
+
+	        // total_path.insert(total_path.end(),detected_planes[0].local_path.begin(), detected_planes[0].local_path.begin());
+	        for (size_t idx : selected_planes[0].local_path)
+	        {
+	            Path_node new_node{};
+				new_node.location = selected_planes[0].sample_points[idx];
+				new_node.lookat = -selected_planes[0].normal;
+				new_node.x_unit = x_unit;
+                new_node.y_unit = y_unit;
+
+				total_path.push_back(new_node);
+	        }
         }
 
         // Draw path
@@ -582,16 +664,31 @@ bool Tool::on_gui()
 
             all_points.push_back(end_point);
 
-			total_path.insert(total_path.end(), all_points.begin(), all_points.end());
+			// total_path.insert(total_path.end(), all_points.begin(), all_points.end());
+
             for (auto& pt : all_points)
             {
-				total_lookat.push_back(total_lookat.back());
+                Path_node new_node{};
+                new_node.location = pt;
+                new_node.lookat = total_path.back().lookat;
+                new_node.x_unit = total_path.back().x_unit;
+                new_node.y_unit = total_path.back().y_unit;
+
+                total_path.push_back(new_node);
             }
+
+			Eigen::Vector3f x_unit_plane2 = plane2.bbox->R_ * Eigen::Vector3f(1, 0, 0).normalized();
+			Eigen::Vector3f y_unit_plane2 = plane2.bbox->R_ * Eigen::Vector3f(0, 1, 0).normalized();
 
 			for (size_t idx : plane2.local_path)
 			{
-				total_path.push_back(plane2.sample_points[idx]);
-				total_lookat.push_back(-plane2.normal);
+                Path_node new_node{};
+                new_node.location = plane2.sample_points[idx];
+                new_node.lookat = -plane2.normal;
+                new_node.x_unit = x_unit_plane2;
+                new_node.y_unit = y_unit_plane2;
+
+                total_path.push_back(new_node);
 			}
 
 
@@ -610,37 +707,48 @@ bool Tool::on_gui()
         redraw_meshes = true;
     }
 
+    ImGui::DragFloat("Ignore distance", &ignore_distance, 0.1f, 0.0f, 100.f);
+
     if (ImGui::Button("TEST: Get k highest points"))
     {
-        std::vector<size_t> points_of_interest = blast::get_k_lowest_points(*base_point_cloud, 9);
+        viewer.delete_all("points_of_interest");
+
+        std::vector<size_t> points_of_interest = blast::get_k_lowest_points(*base_point_cloud, 10, ignore_distance);
 		for (size_t i = 0; i < points_of_interest.size(); ++i)
 		{
 			Eigen::Vector3f poi = base_point_cloud->get_points_f()[points_of_interest[i]];
 
 			viewer.add_sphere(
-				"highest_points",
+				"points_of_interest",
                 poi,
 				2.0f, Eigen::Vector3f(0.0f, 1.0f, 0.0f)
 			);
 
-
+            Path_node new_node{};
+            new_node.location = poi + Vector3f(0.0, 0.0, -50.0);
+            new_node.lookat = Vector3f(0.0, 0.0, 1.0);
+            new_node.x_unit = Vector3f(1.0, 0.0, 0.0);
+            new_node.y_unit = Vector3f(0.0, 1.0, 0.0);
+            total_path.push_back(new_node);
 		}
 		redraw_meshes = true;
     }
 
 
     ImGui::SeparatorText("Koordinatentransformation");
-    ImGui::Text("Linie in Punktwolke");
-	ImGui::DragFloat3("Start", line1_start.data(), 0.1f);
-    ImGui::DragFloat3("End", line1_end.data(), 0.1f);
-
     ImGui::Text("Linie in Roboter-KOS");
     ImGui::DragFloat3("Start", line2_start.data(), 0.1f);
     ImGui::DragFloat3("End", line2_end.data(), 0.1f);
     ImGui::DragFloat3("Scanner-Offset", scanner_offset.data(), 0.1f);
+    ImGui::DragFloat3("Sensor-Offset", sensor_offset.data(), 0.1f);
+
+    ImGui::Checkbox("Invert z", &invert_z);
 
     if (ImGui::Button("Ausgabe in G-Code"))
     {
+        Eigen::Vector3f line1_start = Eigen::Vector3f(0.0f, 0.0f, 0.0f);
+        Eigen::Vector3f line1_end = Eigen::Vector3f(0.0f, max_y_value, 0.0);
+
         Eigen::Matrix3f rotation_matrix = calculate_rotation_matrix(line1_start, line1_end, line2_start, line2_end);
         Eigen::Matrix4f transformation_matrix = calculate_transformation_matrix(line1_start, line1_end, line2_start, line2_end, scanner_offset);
 
@@ -649,28 +757,43 @@ bool Tool::on_gui()
 
         spdlog::info("G-Code:");
         spdlog::info("Laenge points {}", total_path.size());
-        spdlog::info("Laenge lookat {}", total_lookat.size());
+        // spdlog::info("Laenge lookat {}", total_lookat.size());
+
+		ofstream << std::format("TRANS X={0:.2f} Y={1:.2f} Z={2:.2f}\n", -sensor_offset.x(), -sensor_offset.y(), -sensor_offset.z()).c_str();
+
         for (size_t i = 0; i < total_path.size(); ++i)
         {
-			auto pt = total_path[i];
-			auto lookat = total_lookat[i];
+            const auto& node = total_path[i];
 
-            Eigen::Vector3f transformed = (transformation_matrix * pt.homogeneous()).hnormalized();
-            transformed.z() = line2_start.z() - pt.z() + 100.0; // TODO: Remove manual offset
+            Eigen::Vector3f loc = node.location;
+
+            //loc += sensor_offset.x() * node.x_unit;
+            //loc += sensor_offset.y() * node.y_unit;
+            
+            Eigen::Vector3f transformed = (transformation_matrix * loc.homogeneous()).hnormalized();
+        	transformed.z() = line2_start.z() - loc.z();
 
 			// Transform lookat vector to robot coordinate system
-			Eigen::Vector3f transformed_lookat = rotation_matrix * lookat;
+			Eigen::Vector3f transformed_lookat = rotation_matrix * node.lookat;
+
+            //float cos_angle = Vector3f(0.0, 0.0, 1.0).dot(transformed_lookat) / (Vector3f(0.0, 0.0, 1.0).norm() * transformed_lookat.norm());
+            
+
 			//Eigen::Vector3f transformed_lookat = lookat;
 
-			// Convert lookat vector to yaw, pitch, roll
-			float yaw = std::atan2(transformed_lookat.y(), transformed_lookat.x());
-			float pitch = std::atan2(-transformed_lookat.z(), std::sqrt(transformed_lookat.x() * transformed_lookat.x() + transformed_lookat.y() * transformed_lookat.y()));
-			float roll = -(M_PI / 4);
+			// Convert lookat vector to roll pitch yaw
+            float pitch = std::asin(-transformed_lookat.y());
+			float yaw = std::atan2(transformed_lookat.x(), transformed_lookat.y());
+			float roll = 0.0f;
 
-			// Convert to A, B, C
-			float A = yaw * 180.0f / M_PI;
-			float B = pitch * 180.0f / M_PI;
-			float C = roll * 180.0f / M_PI;
+            
+			// Roll Pitch Yaw = A B C
+			float A = yaw * 180.0f / M_PI; // Drehung um die z-Achse des Ausgangssystems
+        	float B = pitch * 180.0f / M_PI; // Drehung um die gedrehte y'-Achse
+			float C = roll * 180.0f / M_PI; // Drehung um die 2-fach gedrehte X''-Achse
+
+            // Convert to rotation matrix (ZYX order - left to right)
+			//transformed += rotation_matrix * sensor_offset;
 
             ofstream << std::format("G01 X={0:.2f} Y={1:.2f} Z={2:.2f} A={3:.2f} B={4:.2f} C={5:.2f} F=200.0\n", transformed.x(), transformed.y(), transformed.z(), A, B, C).c_str();
         }

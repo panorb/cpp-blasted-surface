@@ -1,4 +1,4 @@
-add_executable(Tool src/startup.cpp src/debug.hpp src/debug.cpp src/pipeline.hpp src/pipeline.cpp src/detected_plane_segment.hpp src/detected_plane_segment.cpp
+add_executable(Tool src/startup.cpp src/debug.hpp src/debug.cpp src/pipeline.hpp src/pipeline.cpp src/detected_plane_segment.hpp src/detected_plane_segment.cpp src/path_node.hpp
 	include/blast/tool.hpp
 	src/tool.cpp)
 target_link_libraries(Tool PUBLIC Core Meshview tomlplusplus)
